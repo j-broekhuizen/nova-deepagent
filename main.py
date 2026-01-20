@@ -35,10 +35,11 @@ load_dotenv(Path(__file__).parent / ".env")
 # Add the demo directory to the path for imports
 sys.path.insert(0, str(Path(__file__).parent))
 
-from langchain_core.messages import HumanMessage
+from langchain_core.messages import HumanMessage, AIMessage
 from rich.console import Console
 from rich.panel import Panel
 from rich.markdown import Markdown
+from rich.status import Status
 
 from deepagents import create_deep_agent
 
@@ -90,6 +91,8 @@ def create_nova():
         tools=tools,
         system_prompt="""You are Nova, a personal financial assistant.
 
+CRITICAL: Do not use emojis anywhere in your responses. No emoji characters whatsoever.
+
 Your primary capabilities:
 1. Analyze spending patterns and provide insights
 2. Suggest savings amounts based on income and bills
@@ -98,7 +101,7 @@ Your primary capabilities:
 
 Always use the available tools to get accurate data - never make up numbers.
 Be conversational, supportive, and actionable in your responses.
-Never use emojis in your responses.
+Keep responses clean and professional - use markdown formatting but absolutely no emojis.
 
 When discussing spending categories, these are the valid categories:
 - coffee, fast_food, delivery, dining, entertainment
@@ -131,7 +134,7 @@ async def run_query(query: str) -> None:
 
 
 async def interactive_mode() -> None:
-    """Run Nova in interactive chat mode."""
+    """Run Nova in interactive chat mode with streaming responses."""
     console.print("\n[bold green]Nova[/bold green] - Personal Financial Assistant")
     console.print("[dim]Type 'quit' to exit[/dim]\n")
 
@@ -149,31 +152,72 @@ async def interactive_mode() -> None:
 
             messages.append(HumanMessage(content=user_input))
 
-            with console.status("[bold green]Thinking...", spinner="dots"):
-                result = await agent.ainvoke(
-                    {"messages": messages},
-                    config={"configurable": {"thread_id": "nova-interactive"}},
-                )
+            # Stream the response
+            response_content = ""
+            is_streaming = False
+            status: Status | None = None
 
-            if result.get("messages"):
-                messages = result["messages"]  # Keep conversation history
+            # Start with thinking spinner
+            status = Status("[bold green]Thinking...", spinner="dots", console=console)
+            status.start()
 
-                # Find the last AI message
-                for msg in reversed(messages):
-                    if hasattr(msg, "content") and msg.content and msg.type == "ai":
-                        console.print()
-                        console.print(
-                            Panel(
-                                Markdown(msg.content), title="Nova", border_style="green"
+            async for event in agent.astream_events(
+                {"messages": messages},
+                config={"configurable": {"thread_id": "nova-interactive"}},
+                version="v2",
+            ):
+                event_type = event.get("event")
+
+                # When we get streaming tokens from the final response
+                if event_type == "on_chat_model_stream":
+                    chunk = event.get("data", {}).get("chunk")
+                    if chunk and hasattr(chunk, "content") and chunk.content:
+                        # Extract text from content (may be string or list of blocks)
+                        content = chunk.content
+                        if isinstance(content, list):
+                            # Extract text from content blocks
+                            text = "".join(
+                                block.get("text", "")
+                                for block in content
+                                if isinstance(block, dict) and block.get("type") == "text"
                             )
-                        )
-                        console.print()
-                        break
+                        else:
+                            text = content
+
+                        if text:
+                            # Stop the spinner when we start streaming text
+                            if not is_streaming:
+                                if status:
+                                    status.stop()
+                                    status = None
+                                console.print()
+                                console.print("[bold green]Nova:[/bold green] ", end="")
+                                is_streaming = True
+
+                            # Print the token
+                            console.print(text, end="")
+                            response_content += text
+
+            # Clean up spinner if still running
+            if status:
+                status.stop()
+
+            # Add newlines after streaming completes
+            if is_streaming:
+                console.print("\n")
+
+            # Add the complete response to message history
+            if response_content:
+                messages.append(AIMessage(content=response_content))
 
         except KeyboardInterrupt:
+            if status:
+                status.stop()
             break
         except Exception as e:
-            console.print(f"[red]Error: {e}[/red]")
+            if status:
+                status.stop()
+            console.print(f"\n[red]Error: {e}[/red]")
 
     console.print("\n[dim]Goodbye![/dim]")
 
@@ -210,8 +254,8 @@ def main() -> None:
         console.print(f"     [dim]{query}[/dim]\n")
 
     console.print("Usage:")
-    console.print('  uv run nova.py "your question here"')
-    console.print("  uv run nova.py -i  # Interactive mode\n")
+    console.print('  uv run main.py "your question here"')
+    console.print("  uv run main.py -i  # Interactive mode\n")
 
     # Run the first demo by default
     console.print("[dim]Running demo: Savings suggestion[/dim]\n")
