@@ -1,5 +1,6 @@
 DEMO.md
 docs/
+.DS_Store
 
 # Environment
 .env
