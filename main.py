@@ -44,19 +44,19 @@ from rich.status import Status
 from deepagents import create_deep_agent
 
 # Import all tools
-from nova.tools.transactions import get_transactions, get_recent_income
-from nova.tools.spending import (
+from src.tools.transactions import get_transactions, get_recent_income
+from src.tools.spending import (
     get_spending_summary,
     get_category_spending,
     get_merchant_spending_pattern,
 )
-from nova.tools.savings import (
+from src.tools.savings import (
     get_savings_recommendation,
     calculate_savings_potential,
     transfer_to_savings,
 )
-from nova.tools.accounts import get_accounts, get_recurring_bills
-from nova.tools.enrichment import enrich_transaction
+from src.tools.accounts import get_accounts, get_recurring_bills
+from src.tools.enrichment import enrich_transaction
 
 EXAMPLE_DIR = Path(__file__).parent
 console = Console()
