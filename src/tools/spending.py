@@ -6,7 +6,7 @@ from typing import Literal
 
 from langchain_core.tools import tool
 
-from nova.data.mock_data import get_mock_transactions
+from src.data.mock_data import get_mock_transactions
 
 
 @tool

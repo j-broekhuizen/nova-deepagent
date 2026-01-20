@@ -2,7 +2,7 @@
 
 from langchain_core.tools import tool
 
-from nova.data.mock_data import get_mock_accounts, get_mock_recurring_bills
+from src.data.mock_data import get_mock_accounts, get_mock_recurring_bills
 
 
 @tool

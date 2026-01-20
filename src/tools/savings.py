@@ -5,7 +5,7 @@ from typing import Optional
 
 from langchain_core.tools import tool
 
-from nova.data.mock_data import (
+from src.data.mock_data import (
     MockDataStore,
     get_mock_accounts,
     get_mock_transactions,

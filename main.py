@@ -26,6 +26,7 @@ Usage:
 
 import asyncio
 import sys
+import uuid
 from pathlib import Path
 
 # Load environment variables from .env
@@ -140,6 +141,7 @@ async def interactive_mode() -> None:
 
     agent = create_nova()
     messages: list = []
+    thread_id = f"nova-{uuid.uuid4().hex[:8]}"
 
     while True:
         try:
@@ -163,7 +165,7 @@ async def interactive_mode() -> None:
 
             async for event in agent.astream_events(
                 {"messages": messages},
-                config={"configurable": {"thread_id": "nova-interactive"}},
+                config={"configurable": {"thread_id": thread_id}},
                 version="v2",
             ):
                 event_type = event.get("event")

@@ -2,7 +2,7 @@
 
 from langchain_core.tools import tool
 
-from nova.models.transaction import TransactionCategory
+from src.models.transaction import TransactionCategory
 
 
 # Merchant mapping for enrichment

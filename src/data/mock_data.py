@@ -8,8 +8,8 @@ import random
 from datetime import datetime, timedelta
 from typing import Optional
 
-from nova.models.account import Account, AccountType, RecurringBill
-from nova.models.transaction import (
+from src.models.account import Account, AccountType, RecurringBill
+from src.models.transaction import (
     Transaction,
     MerchantInfo,
     TransactionCategory,

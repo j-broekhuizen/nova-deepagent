@@ -1,7 +1,7 @@
 """Nova data models."""
 
-from nova.models.account import Account, AccountType, RecurringBill
-from nova.models.transaction import (
+from src.models.account import Account, AccountType, RecurringBill
+from src.models.transaction import (
     Transaction,
     TransactionCategory,
     MerchantInfo,
