@@ -25,15 +25,20 @@ Usage:
 """
 
 import asyncio
+import os
 import sys
 import uuid
 from pathlib import Path
 
 # Load environment variables from .env
 from dotenv import load_dotenv
+
 load_dotenv(Path(__file__).parent / ".env")
 
-# Add the demo directory to the path for imports
+# Model configuration
+MODEL = os.getenv("MODEL", "anthropic:claude-haiku-4-5-20251001")
+
+# Add the directory to the path for imports
 sys.path.insert(0, str(Path(__file__).parent))
 
 from langchain_core.messages import HumanMessage, AIMessage
@@ -42,7 +47,7 @@ from rich.panel import Panel
 from rich.markdown import Markdown
 from rich.status import Status
 
-from deepagents import create_deep_agent
+from deepagents import create_deep_agent, SubAgent
 
 # Import all tools
 from src.tools.transactions import get_transactions, get_recent_income
@@ -64,43 +69,86 @@ console = Console()
 
 
 def create_nova():
-    """Create the Nova financial assistant agent."""
+    """Create Nova."""
 
-    # All financial tools
-    tools = [
-        # Transaction tools
-        get_transactions,
-        get_recent_income,
-        # Spending analysis
-        get_spending_summary,
-        get_category_spending,
-        get_merchant_spending_pattern,
-        # Savings tools
-        get_savings_recommendation,
-        calculate_savings_potential,
-        transfer_to_savings,
-        # Account tools
-        get_accounts,
-        get_recurring_bills,
-        # Enrichment
-        enrich_transaction,
-    ]
+    # Define subagents
+    spending_analyst = SubAgent(
+        name="spending_analyst",
+        description="Deep dive into spending patterns, trends, and comparisons. Use for analyzing spending by category, merchant, or time period.",
+        model=MODEL,
+        tools=[
+            get_transactions,
+            get_spending_summary,
+            get_category_spending,
+            get_merchant_spending_pattern,
+        ],
+        system_prompt="""You are a spending analyst. Your job is to analyze spending data and report back.
+
+1. Use your tools to gather the spending data you need
+2. Once you have sufficient data, respond with your analysis
+
+Your analysis should cover relevant insights like spending by category, top merchants, and patterns.
+Do not continue gathering data indefinitely - provide your findings when ready.
+Keep responses concise and data-driven. No emojis.""",
+    )
+
+    savings_advisor = SubAgent(
+        name="savings_advisor",
+        description="Calculate savings potential, run 'what if' scenarios, and recommend savings amounts. Use for questions about how much to save or what could be saved by changing habits.",
+        model=MODEL,
+        tools=[
+            get_transactions,
+            get_recent_income,
+            get_recurring_bills,
+            get_savings_recommendation,
+            calculate_savings_potential,
+        ],
+        system_prompt="""You are a savings advisor. Your job is to calculate savings potential and report back.
+
+1. Use your tools to gather income, bills, and spending data as needed
+2. Once you have sufficient data, respond with your recommendations
+
+Your response should include concrete numbers: how much to save, potential savings from changes, monthly and yearly projections.
+Do not continue gathering data indefinitely - provide your findings when ready.
+Be encouraging but realistic. No emojis.""",
+    )
+
+    account_manager = SubAgent(
+        name="account_manager",
+        description="Handle account lookups, check balances, and execute transfers. Use for viewing accounts, checking balances, or moving money to savings.",
+        model=MODEL,
+        tools=[
+            get_accounts,
+            get_recurring_bills,
+            transfer_to_savings,
+        ],
+        system_prompt="""You are an account manager. Your job is to handle account inquiries and execute transfers.
+
+1. Use your tools to look up accounts, balances, or bills as needed
+2. For transfers, execute them and confirm the result
+3. Once complete, respond with the information or confirmation
+
+Do not continue making unnecessary calls - provide your response when ready.
+Confirm all actions clearly. No emojis.""",
+    )
 
     return create_deep_agent(
-        model="anthropic:claude-sonnet-4-20250514",
+        model=MODEL,
         memory=[str(EXAMPLE_DIR / "AGENTS.md")],
-        tools=tools,
-        system_prompt="""You are Nova, a personal financial assistant.
+        subagents=[spending_analyst, savings_advisor, account_manager],
+        system_prompt="""You are Nova, a personal financial assistant and orchestrator.
 
 CRITICAL: Do not use emojis anywhere in your responses. No emoji characters whatsoever.
 
-Your primary capabilities:
-1. Analyze spending patterns and provide insights
-2. Suggest savings amounts based on income and bills
-3. Calculate potential savings from lifestyle changes
-4. Answer questions about transactions and balances
+You coordinate three specialist subagents to help users with their finances:
+- spending_analyst: Analyzes spending patterns, trends, and breakdowns by category or merchant
+- savings_advisor: Calculates savings potential, runs "what if" scenarios, recommends savings amounts
+- account_manager: Looks up account balances, lists bills, and executes transfers
 
-Always use the available tools to get accurate data - never make up numbers.
+You MUST delegate all financial queries to the appropriate subagent. You do not have direct access to financial data.
+
+For complex requests, you may need to delegate to multiple subagents in sequence.
+
 Be conversational, supportive, and actionable in your responses.
 Keep responses clean and professional - use markdown formatting but absolutely no emojis.
 
@@ -181,7 +229,8 @@ async def interactive_mode() -> None:
                             text = "".join(
                                 block.get("text", "")
                                 for block in content
-                                if isinstance(block, dict) and block.get("type") == "text"
+                                if isinstance(block, dict)
+                                and block.get("type") == "text"
                             )
                         else:
                             text = content
@@ -226,11 +275,6 @@ async def interactive_mode() -> None:
 
 def main() -> None:
     """Main entry point."""
-    # Check for interactive mode
-    if "--interactive" in sys.argv or "-i" in sys.argv:
-        asyncio.run(interactive_mode())
-        return
-
     # Check for query argument
     args = [arg for arg in sys.argv[1:] if not arg.startswith("-")]
     if args:
@@ -238,30 +282,8 @@ def main() -> None:
         asyncio.run(run_query(query))
         return
 
-    # No arguments - show demo menu
-    demos = [
-        ("Savings suggestion", "My paycheck just came in. How much should I save?"),
-        (
-            "Spending insight",
-            "How much have I spent on dining and entertainment this month?",
-        ),
-        ("Quick query", "How much did I spend in the last week?"),
-        ("Savings potential", "How much could I save by making coffee at home?"),
-    ]
-
-    console.print("\n[bold green]Nova[/bold green] - Personal Financial Assistant\n")
-    console.print("Example queries:\n")
-    for i, (name, query) in enumerate(demos, 1):
-        console.print(f"  [bold]{i}.[/bold] {name}")
-        console.print(f"     [dim]{query}[/dim]\n")
-
-    console.print("Usage:")
-    console.print('  uv run main.py "your question here"')
-    console.print("  uv run main.py -i  # Interactive mode\n")
-
-    # Run the first demo by default
-    console.print("[dim]Running demo: Savings suggestion[/dim]\n")
-    asyncio.run(run_query(demos[0][1]))
+    # No arguments or -i flag - start interactive mode
+    asyncio.run(interactive_mode())
 
 
 if __name__ == "__main__":
