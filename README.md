@@ -1,6 +1,6 @@
 # Nova - Personal Financial Assistant
 
-Nova is a DeepAgent that helps users manage their finances through natural conversation.
+Nova is a deep agent that helps users manage their finances through natural conversation.
 
 ## Features
 
