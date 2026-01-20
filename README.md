@@ -1,6 +1,6 @@
 # Nova - Personal Financial Assistant
 
-Nova is a DeepAgent demo that helps users manage their finances through natural conversation.
+Nova is a DeepAgent that helps users manage their finances through natural conversation.
 
 ## Features
 
@@ -21,9 +21,9 @@ cp .env.example .env
 Edit `.env` with your API keys:
 ```
 ANTHROPIC_API_KEY=sk-ant-...
-LANGSMITH_API_KEY=lsv2_pt_...    # Optional, for tracing
-LANGSMITH_PROJECT=nova           # Optional
-LANGSMITH_TRACING=true           # Optional
+LANGSMITH_API_KEY=lsv2_pt_...  
+LANGSMITH_PROJECT=nova         
+LANGSMITH_TRACING=true          
 ```
 
 ## Usage
@@ -36,16 +36,14 @@ uv run main.py "your question here"
 uv run main.py -i
 ```
 
-See [DEMO.md](DEMO.md) for demo scenarios and scripts.
-
 ## Architecture
 
 ```
-demos/nova/
+nova/
 ├── main.py                 # Main entry point
 ├── AGENTS.md               # Nova's personality and guidelines
 ├── pyproject.toml          # Dependencies
-├── nova/                   # Main package
+├── src/                    # Main package
 │   ├── models/
 │   │   ├── transaction.py  # Transaction, MerchantInfo, Category
 │   │   └── account.py      # Account, RecurringBill
@@ -62,19 +60,19 @@ demos/nova/
 
 ## Tools
 
-| Tool | Description |
-|------|-------------|
-| `get_transactions` | Query transactions with filters |
-| `get_recent_income` | Find recent paychecks |
-| `get_spending_summary` | Aggregate by category/merchant |
-| `get_category_spending` | Deep dive into categories |
-| `get_merchant_spending_pattern` | Analyze habits |
-| `get_savings_recommendation` | Calculate safe-to-save amount |
-| `calculate_savings_potential` | "What if" scenarios |
-| `transfer_to_savings` | Execute transfers |
-| `get_accounts` | List accounts and balances |
-| `get_recurring_bills` | List monthly bills |
-| `enrich_transaction` | Categorize raw descriptions |
+| Tool                            | Description                     |
+| ------------------------------- | ------------------------------- |
+| `get_transactions`              | Query transactions with filters |
+| `get_recent_income`             | Find recent paychecks           |
+| `get_spending_summary`          | Aggregate by category/merchant  |
+| `get_category_spending`         | Deep dive into categories       |
+| `get_merchant_spending_pattern` | Analyze habits                  |
+| `get_savings_recommendation`    | Calculate safe-to-save amount   |
+| `calculate_savings_potential`   | "What if" scenarios             |
+| `transfer_to_savings`           | Execute transfers               |
+| `get_accounts`                  | List accounts and balances      |
+| `get_recurring_bills`           | List monthly bills              |
+| `enrich_transaction`            | Categorize raw descriptions     |
 
 ## Mock Data
 
