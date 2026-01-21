@@ -1,27 +1,81 @@
 import { useState } from "react";
-import { CheckCircle, Loader2, AlertCircle, ChevronDown, ChevronUp, Wrench } from "lucide-react";
+import {
+  CheckCircle,
+  Loader2,
+  AlertCircle,
+  ChevronDown,
+  ChevronUp,
+  Wrench,
+} from "lucide-react";
 import type { ToolCallWithResult } from "@langchain/langgraph-sdk/react";
+import { ChartSpecSchema, type ChartSpec } from "../types/chart";
+import { ChartRenderer } from "./charts";
 
 interface ToolCallCardProps {
   toolCall: ToolCallWithResult;
 }
 
-function extractResultContent(result: unknown): string {
-  if (!result) return "";
-  if (typeof result === "string") return result;
+function isChartSpec(value: unknown): value is ChartSpec {
+  return ChartSpecSchema.safeParse(value).success;
+}
+
+interface ExtractedResult {
+  text: string;
+  chart: ChartSpec | null;
+}
+
+function extractResultContent(result: unknown): ExtractedResult {
+  if (!result) return { text: "", chart: null };
+
+  // Check if result itself is a ChartSpec
+  if (isChartSpec(result)) {
+    return { text: "", chart: result };
+  }
+
+  // Check if result has a chart property
   if (typeof result === "object" && result !== null) {
     const obj = result as Record<string, unknown>;
+
+    // Extract chart if present
+    let chart: ChartSpec | null = null;
+    if ("chart" in obj && isChartSpec(obj.chart)) {
+      chart = obj.chart;
+    }
+
+    // Extract text content
+    let text = "";
     if ("content" in obj) {
-      if (typeof obj.content === "string") return obj.content;
-      if (Array.isArray(obj.content)) {
-        return obj.content
+      if (typeof obj.content === "string") {
+        text = obj.content;
+      } else if (Array.isArray(obj.content)) {
+        text = obj.content
           .filter((c) => c.type === "text")
           .map((c) => c.text ?? "")
           .join("");
       }
     }
+
+    // If we found a chart, return the rest as text (excluding the chart key)
+    if (chart) {
+      const { chart: _, ...rest } = obj;
+      if (Object.keys(rest).length > 0) {
+        text = JSON.stringify(rest, null, 2);
+      }
+      return { text, chart };
+    }
+
+    // No chart found, return full object as text
+    if (!text) {
+      text = JSON.stringify(result, null, 2);
+    }
+    return { text, chart: null };
   }
-  return JSON.stringify(result, null, 2);
+
+  if (typeof result === "string") {
+    return { text: result, chart: null };
+  }
+
+  return { text: JSON.stringify(result, null, 2), chart: null };
 }
 
 export function ToolCallCard({ toolCall }: ToolCallCardProps) {
@@ -65,9 +119,16 @@ export function ToolCallCard({ toolCall }: ToolCallCardProps) {
           {toolCall.result && (
             <div>
               <h4 className="text-xs uppercase text-gray-500 mb-1">Result</h4>
-              <pre className="text-xs text-gray-300 bg-gray-900 p-2 rounded overflow-x-auto whitespace-pre-wrap">
-                {resultContent}
-              </pre>
+              {resultContent.chart && (
+                <div className="mb-3 bg-gray-900 p-3 rounded">
+                  <ChartRenderer spec={resultContent.chart} />
+                </div>
+              )}
+              {resultContent.text && (
+                <pre className="text-xs text-gray-300 bg-gray-900 p-2 rounded overflow-x-auto whitespace-pre-wrap max-h-64 overflow-y-auto">
+                  {resultContent.text}
+                </pre>
+              )}
             </div>
           )}
         </div>

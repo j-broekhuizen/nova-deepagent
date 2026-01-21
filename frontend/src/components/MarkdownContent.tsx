@@ -3,6 +3,8 @@ import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import remarkGfm from "remark-gfm";
 import remarkBreaks from "remark-breaks";
+import { ChartSpecSchema } from "../types/chart";
+import { ChartRenderer } from "./charts";
 
 interface MarkdownContentProps {
   content: string;
@@ -16,7 +18,26 @@ export function MarkdownContent({ content }: MarkdownContentProps) {
         components={{
           code({ className, children, ...props }) {
             const match = /language-(\w+)/.exec(className || "");
+            const language = match?.[1];
             const isInline = !match && !className;
+
+            // Handle chartspec code blocks - render as chart
+            if (language === "chartspec") {
+              try {
+                const chartJson = String(children).trim();
+                const parsed = JSON.parse(chartJson);
+                const result = ChartSpecSchema.safeParse(parsed);
+                if (result.success) {
+                  return (
+                    <div className="my-4 not-prose">
+                      <ChartRenderer spec={result.data} />
+                    </div>
+                  );
+                }
+              } catch {
+                // Fall through to render as code block if parsing fails
+              }
+            }
 
             if (isInline) {
               return (
@@ -32,7 +53,7 @@ export function MarkdownContent({ content }: MarkdownContentProps) {
             return (
               <SyntaxHighlighter
                 style={oneDark}
-                language={match?.[1] || "text"}
+                language={language || "text"}
                 PreTag="div"
                 customStyle={{
                   margin: 0,

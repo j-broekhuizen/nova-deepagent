@@ -63,6 +63,7 @@ from src.tools.savings import (
 )
 from src.tools.accounts import get_accounts, get_recurring_bills
 from src.tools.enrichment import enrich_transaction
+from src.tools.charts import build_chart_spec
 
 EXAMPLE_DIR = Path(__file__).parent
 console = Console()
@@ -81,11 +82,19 @@ def create_nova():
             get_spending_summary,
             get_category_spending,
             get_merchant_spending_pattern,
+            build_chart_spec,
         ],
         system_prompt="""You are a spending analyst. Your job is to analyze spending data and report back.
 
 1. Use your tools to gather the spending data you need
 2. Once you have sufficient data, respond with your analysis
+3. IMPORTANT: When get_spending_summary returns a "chart" field, include it in your response as a chartspec code block like this:
+
+```chartspec
+{"version":1,"type":"bar","title":"...","data":[...],"xKey":"name","series":[...],"yAxis":{"formatter":"usd"}}
+```
+
+This allows the frontend to render an interactive chart visualization.
 
 Your analysis should cover relevant insights like spending by category, top merchants, and patterns.
 Do not continue gathering data indefinitely - provide your findings when ready.

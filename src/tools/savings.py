@@ -6,10 +6,11 @@ from typing import Optional
 from langchain_core.tools import tool
 
 from src.data.mock_data import (
-    MockDataStore,
     get_mock_accounts,
     get_mock_transactions,
     get_mock_recurring_bills,
+    get_account_by_id,
+    transfer,
 )
 
 
@@ -161,17 +162,16 @@ def transfer_to_savings(
     Returns:
         Transfer result with updated balances.
     """
-    store = MockDataStore()
-    accounts = store.accounts
+    accounts = get_mock_accounts()
 
     # Find accounts
     if from_account_id:
-        from_account = store.get_account_by_id(from_account_id)
+        from_account = get_account_by_id(from_account_id)
     else:
         from_account = next((a for a in accounts if a.type.value == "checking"), None)
 
     if to_account_id:
-        to_account = store.get_account_by_id(to_account_id)
+        to_account = get_account_by_id(to_account_id)
     else:
         to_account = next((a for a in accounts if a.type.value == "savings"), None)
 
@@ -190,7 +190,7 @@ def transfer_to_savings(
         }
 
     # Execute the transfer
-    success = store.transfer(from_account.id, to_account.id, amount)
+    success = transfer(from_account.id, to_account.id, amount)
 
     if success:
         return {
