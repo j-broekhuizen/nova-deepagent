@@ -1,0 +1,8 @@
+{
+  "python_version": "3.11",
+  "graphs": {
+    "nova": "./graph.py:graph"
+  },
+  "dependencies": ["./pyproject.toml"],
+  "env": ".env"
+}

@@ -1,6 +1,7 @@
 DEMO.md
 docs/
 .DS_Store
+CLAUDE.md
 
 # Environment
 .env
@@ -14,10 +15,19 @@ __pycache__/
 .eggs/
 *.egg-info/
 *.egg
+uv.lock
 
 # Virtual environments
 .venv/
 venv/
+
+# LangGraph
+.langgraph_api/
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
 
 # IDE
 .idea/

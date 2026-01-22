@@ -7,6 +7,7 @@ from typing import Literal
 from langchain_core.tools import tool
 
 from src.data.mock_data import get_mock_transactions
+from src.models.chart import AxisConfig, ChartSpec, ChartType, FormatterType, Series
 
 
 @tool
@@ -14,6 +15,7 @@ def get_spending_summary(
     period: Literal["week", "month", "quarter"] = "month",
     group_by: Literal["category", "merchant", "day"] = "category",
     top_n: int = 10,
+    include_chart: bool = True,
 ) -> dict:
     """Get a summary of spending grouped by category, merchant, or day.
 
@@ -21,9 +23,10 @@ def get_spending_summary(
         period: Time period to analyze - "week", "month", or "quarter".
         group_by: How to group the spending - "category", "merchant", or "day".
         top_n: Number of top items to return.
+        include_chart: Whether to include a chart visualization (default True).
 
     Returns:
-        Dictionary with grouped spending data and insights.
+        Dictionary with grouped spending data, insights, and optional chart.
     """
     # Calculate date range
     now = datetime.now()
@@ -63,20 +66,40 @@ def get_spending_summary(
 
     total_spending = sum(abs(t.amount) for t in expenses)
 
-    return {
+    breakdown_list = [
+        {
+            "name": k,
+            "amount": round(v, 2),
+            "percentage": round(v / total_spending * 100, 1),
+        }
+        for k, v in top_items
+    ]
+
+    result = {
         "period": period,
         "group_by": group_by,
         "total_spending": round(total_spending, 2),
-        "breakdown": [
-            {
-                "name": k,
-                "amount": round(v, 2),
-                "percentage": round(v / total_spending * 100, 1),
-            }
-            for k, v in top_items
-        ],
+        "breakdown": breakdown_list,
         "transaction_count": len(expenses),
     }
+
+    # Include chart visualization if requested
+    if include_chart and breakdown_list:
+        chart_type = ChartType.LINE if group_by == "day" else ChartType.BAR
+        chart_data = [{"name": item["name"], "amount": item["amount"]} for item in breakdown_list]
+
+        result["chart"] = ChartSpec(
+            version=1,
+            type=chart_type,
+            title=f"Spending by {group_by.title()} ({period})",
+            data=chart_data,
+            xKey="name",
+            series=[Series(key="amount", label="Amount")],
+            yAxis=AxisConfig(formatter=FormatterType.USD),
+            height=250,
+        ).model_dump()
+
+    return result
 
 
 @tool
