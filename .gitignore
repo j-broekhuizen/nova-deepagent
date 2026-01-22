@@ -2,7 +2,7 @@ DEMO.md
 docs/
 .DS_Store
 CLAUDE.md
-
+.claude/
 # Environment
 .env
 
