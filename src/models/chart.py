@@ -14,6 +14,7 @@ class ChartType(str, Enum):
     BAR = "bar"
     STACKED_AREA = "stackedArea"
     SCATTER = "scatter"
+    PIE = "pie"
 
 
 class FormatterType(str, Enum):

@@ -107,6 +107,13 @@ export function ToolCallCard({ toolCall }: ToolCallCardProps) {
         )}
       </button>
 
+      {/* Chart displayed prominently outside collapsed section */}
+      {resultContent.chart && (
+        <div className="px-3 pb-3 bg-gray-900 border-t border-gray-700">
+          <ChartRenderer spec={resultContent.chart} />
+        </div>
+      )}
+
       {isExpanded && (
         <div className="px-3 pb-3 space-y-3 border-t border-gray-700 pt-3">
           <div>
@@ -119,11 +126,6 @@ export function ToolCallCard({ toolCall }: ToolCallCardProps) {
           {toolCall.result && (
             <div>
               <h4 className="text-xs uppercase text-gray-500 mb-1">Result</h4>
-              {resultContent.chart && (
-                <div className="mb-3 bg-gray-900 p-3 rounded">
-                  <ChartRenderer spec={resultContent.chart} />
-                </div>
-              )}
               {resultContent.text && (
                 <pre className="text-xs text-gray-300 bg-gray-900 p-2 rounded overflow-x-auto whitespace-pre-wrap max-h-64 overflow-y-auto">
                   {resultContent.text}

@@ -7,6 +7,7 @@ export const ChartTypeSchema = z.enum([
   "bar",
   "stackedArea",
   "scatter",
+  "pie",
 ]);
 export type ChartType = z.infer<typeof ChartTypeSchema>;
 
@@ -24,14 +25,14 @@ export type FormatterType = z.infer<typeof FormatterTypeSchema>;
 export const SeriesSchema = z.object({
   key: z.string(),
   label: z.string(),
-  color: z.string().optional(),
+  color: z.string().nullish(), // nullish = null | undefined
 });
 export type Series = z.infer<typeof SeriesSchema>;
 
 // Axis configuration
 export const AxisConfigSchema = z.object({
-  label: z.string().optional(),
-  formatter: FormatterTypeSchema.optional(),
+  label: z.string().nullish(),
+  formatter: FormatterTypeSchema.nullish(),
 });
 export type AxisConfig = z.infer<typeof AxisConfigSchema>;
 
@@ -39,14 +40,14 @@ export type AxisConfig = z.infer<typeof AxisConfigSchema>;
 export const ChartSpecSchema = z.object({
   version: z.literal(1),
   type: ChartTypeSchema,
-  title: z.string().optional(),
+  title: z.string().nullish(),
   data: z.array(z.record(z.string(), z.unknown())),
   xKey: z.string(),
   series: z.array(SeriesSchema),
-  xAxis: AxisConfigSchema.optional(),
-  yAxis: AxisConfigSchema.optional(),
-  showLegend: z.boolean().optional(),
-  showTooltip: z.boolean().optional(),
-  height: z.number().optional(),
+  xAxis: AxisConfigSchema.nullish(),
+  yAxis: AxisConfigSchema.nullish(),
+  showLegend: z.boolean().nullish(),
+  showTooltip: z.boolean().nullish(),
+  height: z.number().nullish(),
 });
 export type ChartSpec = z.infer<typeof ChartSpecSchema>;

@@ -87,14 +87,15 @@ def create_nova():
         system_prompt="""You are a spending analyst. Your job is to analyze spending data and report back.
 
 1. Use your tools to gather the spending data you need
-2. Once you have sufficient data, respond with your analysis
-3. IMPORTANT: When get_spending_summary returns a "chart" field, include it in your response as a chartspec code block like this:
+2. Use build_chart_spec to create a visual chart of the spending breakdown (use "bar" chart for category comparisons)
+3. Once you have sufficient data and chart, respond with your analysis
 
-```chartspec
-{"version":1,"type":"bar","title":"...","data":[...],"xKey":"name","series":[...],"yAxis":{"formatter":"usd"}}
+IMPORTANT: Always call build_chart_spec to visualize spending data. For spending breakdowns, use a bar chart with categories on x-axis and amounts on y-axis with y_formatter="usd".
+
+CRITICAL: After calling build_chart_spec, you MUST include the chart data at the END of your response in this exact format:
+```chartdata
+<paste the exact JSON returned by build_chart_spec here>
 ```
-
-This allows the frontend to render an interactive chart visualization.
 
 Your analysis should cover relevant insights like spending by category, top merchants, and patterns.
 Do not continue gathering data indefinitely - provide your findings when ready.
@@ -111,11 +112,20 @@ Keep responses concise and data-driven. No emojis.""",
             get_recurring_bills,
             get_savings_recommendation,
             calculate_savings_potential,
+            build_chart_spec,
         ],
         system_prompt="""You are a savings advisor. Your job is to calculate savings potential and report back.
 
 1. Use your tools to gather income, bills, and spending data as needed
-2. Once you have sufficient data, respond with your recommendations
+2. For "what if" scenarios, use build_chart_spec to visualize current vs potential spending (use "bar" chart)
+3. Once you have sufficient data and optionally a chart, respond with your recommendations
+
+IMPORTANT: When comparing current spending vs savings potential, call build_chart_spec to create a visualization.
+
+CRITICAL: After calling build_chart_spec, you MUST include the chart data at the END of your response in this exact format:
+```chartdata
+<paste the exact JSON returned by build_chart_spec here>
+```
 
 Your response should include concrete numbers: how much to save, potential savings from changes, monthly and yearly projections.
 Do not continue gathering data indefinitely - provide your findings when ready.

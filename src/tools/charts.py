@@ -9,7 +9,7 @@ from src.models.chart import AxisConfig, ChartSpec, ChartType, FormatterType, Se
 
 @tool
 def build_chart_spec(
-    chart_type: Literal["line", "area", "bar", "stackedArea", "scatter"],
+    chart_type: Literal["line", "area", "bar", "stackedArea", "scatter", "pie"],
     data: list[dict],
     x_key: str,
     series_configs: list[dict],
@@ -32,6 +32,7 @@ def build_chart_spec(
             - "bar": Bar chart for category comparisons
             - "stackedArea": Stacked areas for composition
             - "scatter": Scatter plot for correlations
+            - "pie": Pie chart for showing proportions/percentages
         data: Array of data points. Each item should be a dict with keys
             matching x_key and the keys specified in series_configs.
             Example: [{"name": "Coffee", "amount": 127.50}, ...]

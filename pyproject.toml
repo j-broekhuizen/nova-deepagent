@@ -10,6 +10,7 @@ dependencies = [
     "python-dotenv",
     "langgraph-api",
     "langgraph-cli[inmem]",
+    "langsmith-fetch",
 ]
 
 [dependency-groups]
