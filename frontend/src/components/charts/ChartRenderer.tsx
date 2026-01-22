@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useCallback } from "react";
 import {
   XYChart,
   AnimatedLineSeries,
@@ -39,14 +39,24 @@ export function ChartRenderer({ spec }: ChartRendererProps) {
   const { type, data, xKey, series, xAxis, yAxis, title } = spec;
   const height = spec.height ?? 300;
 
-  // Check if x values are dates
+  // Check if x values are dates - must be ISO format or Date objects
+  // Avoid false positives from strings like "Nov 2-8" that Date.parse partially handles
   const isTimeScale = useMemo(() => {
     if (type === "bar") return false;
     const firstValue = data[0]?.[xKey];
-    return (
-      firstValue instanceof Date ||
-      (typeof firstValue === "string" && !isNaN(Date.parse(firstValue)))
-    );
+    if (firstValue instanceof Date) return true;
+    if (typeof firstValue === "string") {
+      // Only accept ISO-like date formats (YYYY-MM-DD or YYYY-MM-DDTHH:mm:ss)
+      // This prevents strings like "Nov 2-8" from being misinterpreted as dates
+      const isoDatePattern = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2})?/;
+      if (!isoDatePattern.test(firstValue)) return false;
+      const parsed = Date.parse(firstValue);
+      if (isNaN(parsed)) return false;
+      // Sanity check: date should be within reasonable range (2000-2100)
+      const year = new Date(parsed).getFullYear();
+      return year >= 2000 && year <= 2100;
+    }
+    return false;
   }, [type, data, xKey]);
 
   // Auto-detect date formatter for time scales
@@ -59,16 +69,23 @@ export function ChartRenderer({ spec }: ChartRendererProps) {
     [yAxis?.formatter]
   );
 
+  // Check if x values are categorical strings (not dates, not numbers)
+  const isCategoricalScale = useMemo(() => {
+    if (isTimeScale) return false;
+    const firstValue = data[0]?.[xKey];
+    return typeof firstValue === "string";
+  }, [data, xKey, isTimeScale]);
+
   // Determine scale types based on chart type
   const xScaleConfig = useMemo(() => {
-    if (type === "bar") {
+    if (type === "bar" || isCategoricalScale) {
       return { type: "band" as const, padding: 0.2 };
     }
     if (isTimeScale) {
       return { type: "time" as const };
     }
     return { type: "linear" as const };
-  }, [type, isTimeScale]);
+  }, [type, isTimeScale, isCategoricalScale]);
 
   const yScaleConfig = { type: "linear" as const };
 
@@ -85,6 +102,25 @@ export function ChartRenderer({ spec }: ChartRendererProps) {
       yAccessor: (key: string) => (d: DataRecord) => d[key] as number,
     }),
     [xKey, isTimeScale]
+  );
+
+  // Memoize tooltip renderer to prevent re-render loops
+  const renderTooltip = useCallback(
+    ({ tooltipData }: { tooltipData?: { nearestDatum?: { datum?: unknown } } }) => {
+      const datum = tooltipData?.nearestDatum?.datum as DataRecord | undefined;
+      if (!datum) return null;
+      return (
+        <div className="bg-gray-800 rounded px-2 py-1 text-sm border border-gray-700">
+          <div className="text-gray-400 text-xs">{xFormatter(datum[xKey])}</div>
+          {series.map((s) => (
+            <div key={s.key} className="text-gray-100">
+              {s.label}: {yFormatter(datum[s.key])}
+            </div>
+          ))}
+        </div>
+      );
+    },
+    [xFormatter, yFormatter, xKey, series]
   );
 
   const renderSeries = () => {
@@ -152,18 +188,12 @@ export function ChartRenderer({ spec }: ChartRendererProps) {
     }
   };
 
-  // Pie chart color scale
+  // Pie chart color scale - memoize domain to prevent unnecessary recalculations
+  const pieDomain = useMemo(() => data.map((d) => String(d[xKey])), [data, xKey]);
   const pieColorScale = useMemo(
-    () =>
-      scaleOrdinal({
-        domain: data.map((d) => String(d[xKey])),
-        range: PIE_COLORS,
-      }),
-    [data, xKey]
+    () => scaleOrdinal({ domain: pieDomain, range: PIE_COLORS }),
+    [pieDomain]
   );
-
-  // State for pie chart hover
-  const [hoveredSlice, setHoveredSlice] = useState<string | null>(null);
 
   if (!data || data.length === 0) {
     return (
@@ -173,7 +203,7 @@ export function ChartRenderer({ spec }: ChartRendererProps) {
     );
   }
 
-  // Render pie chart separately
+  // Render pie chart separately (no hover state to avoid re-render loops)
   if (type === "pie") {
     const valueKey = series[0]?.key || "amount";
 
@@ -184,7 +214,7 @@ export function ChartRenderer({ spec }: ChartRendererProps) {
             {title}
           </h3>
         )}
-        <ParentSize>
+        <ParentSize debounceTime={100}>
           {({ width }) => {
             if (width <= 0) return null;
             const radius = Math.min(width, height) / 2 - 40;
@@ -204,36 +234,20 @@ export function ChartRenderer({ spec }: ChartRendererProps) {
                     {(pie) =>
                       pie.arcs.map((arc, i) => {
                         const label = String(data[i][xKey]);
-                        const isHovered = hoveredSlice === label;
                         const [centroidX, centroidY] = pie.path.centroid(arc);
                         const pathD = pie.path(arc) || "";
 
                         return (
                           <g
                             key={`arc-${label}`}
-                            onMouseEnter={() => setHoveredSlice(label)}
-                            onMouseLeave={() => setHoveredSlice(null)}
+                            className="pie-slice"
                             style={{ cursor: "pointer" }}
                           >
-                            {/* Invisible larger hit area to prevent hover flicker */}
-                            <path
-                              d={pathD}
-                              fill="transparent"
-                              style={{ transform: "scale(1.1)", transformOrigin: `${centroidX}px ${centroidY}px` }}
-                            />
-                            {/* Visible slice */}
+                            {/* Slice with CSS hover instead of React state */}
                             <path
                               d={pathD}
                               fill={pieColorScale(label)}
-                              opacity={isHovered ? 1 : 0.85}
-                              stroke={isHovered ? "#fff" : "transparent"}
-                              strokeWidth={2}
-                              pointerEvents="none"
-                              style={{
-                                transform: isHovered ? "scale(1.03)" : "scale(1)",
-                                transformOrigin: `${centroidX}px ${centroidY}px`,
-                                transition: "all 0.15s ease-out",
-                              }}
+                              className="pie-slice-path"
                             />
                             {arc.endAngle - arc.startAngle > 0.4 && (
                               <text
@@ -282,22 +296,6 @@ export function ChartRenderer({ spec }: ChartRendererProps) {
                     );
                   })}
                 </Group>
-                {/* Tooltip on hover */}
-                {hoveredSlice && (
-                  <Group top={20} left={width / 2}>
-                    <text
-                      textAnchor="middle"
-                      fill="#e5e7eb"
-                      fontSize={13}
-                      fontWeight={500}
-                    >
-                      {hoveredSlice}:{" "}
-                      {yFormatter(
-                        data.find((d) => String(d[xKey]) === hoveredSlice)?.[valueKey]
-                      )}
-                    </text>
-                  </Group>
-                )}
               </svg>
             );
           }}
@@ -310,12 +308,23 @@ export function ChartRenderer({ spec }: ChartRendererProps) {
   const hasYLabel = Boolean(yAxis?.label);
   const hasXLabel = Boolean(xAxis?.label);
 
+  // Determine if we need rotated tick labels (for time scales, categorical data, or many bar items)
+  const needsRotatedLabels = isTimeScale || isCategoricalScale || (type === "bar" && data.length > 5);
+
+  // Calculate bottom margin: rotated labels need more space, especially with an axis label
+  const bottomMargin = needsRotatedLabels
+    ? (hasXLabel ? 100 : 70)  // Extra space when we have both rotated labels and axis label
+    : (hasXLabel ? 50 : 40);
+
+  // Label offset must clear the rotated tick labels
+  const xLabelOffset = needsRotatedLabels ? 55 : 15;
+
   return (
     <div className="w-full pt-3">
       {title && (
         <h3 className="text-sm font-medium text-gray-200 mb-3 text-center">{title}</h3>
       )}
-      <ParentSize>
+      <ParentSize debounceTime={100}>
         {({ width }) =>
           width > 0 ? (
             <XYChart
@@ -327,19 +336,26 @@ export function ChartRenderer({ spec }: ChartRendererProps) {
               margin={{
                 top: 20,
                 right: 20,
-                bottom: isTimeScale ? 70 : hasXLabel ? 50 : 40,
+                bottom: bottomMargin,
                 left: hasYLabel ? 80 : 60,
               }}
             >
               <Grid columns={false} numTicks={4} strokeDasharray="2,3" />
               <Axis
                 orientation="bottom"
-                tickFormat={(v) => xFormatter(v)}
+                tickFormat={(v) => {
+                  const formatted = xFormatter(v);
+                  // Truncate long labels for categorical charts
+                  if ((type === "bar" || isCategoricalScale) && typeof formatted === "string" && formatted.length > 12) {
+                    return formatted.slice(0, 10) + "…";
+                  }
+                  return formatted;
+                }}
                 label={xAxis?.label ?? undefined}
-                labelOffset={isTimeScale ? 25 : 15}
-                numTicks={type === "bar" ? data.length : isTimeScale ? 6 : undefined}
+                labelOffset={xLabelOffset}
+                numTicks={type === "bar" || isCategoricalScale ? data.length : isTimeScale ? 6 : undefined}
                 tickLabelProps={
-                  isTimeScale
+                  needsRotatedLabels
                     ? { angle: -45, textAnchor: "end", fontSize: 10 }
                     : undefined
                 }
@@ -357,24 +373,7 @@ export function ChartRenderer({ spec }: ChartRendererProps) {
                   snapTooltipToDatumX
                   snapTooltipToDatumY
                   showSeriesGlyphs
-                  renderTooltip={({ tooltipData }) => {
-                    const datum = tooltipData?.nearestDatum?.datum as
-                      | DataRecord
-                      | undefined;
-                    if (!datum) return null;
-                    return (
-                      <div className="bg-gray-800 rounded px-2 py-1 text-sm border border-gray-700">
-                        <div className="text-gray-400 text-xs">
-                          {xFormatter(datum[xKey])}
-                        </div>
-                        {series.map((s) => (
-                          <div key={s.key} className="text-gray-100">
-                            {s.label}: {yFormatter(datum[s.key])}
-                          </div>
-                        ))}
-                      </div>
-                    );
-                  }}
+                  renderTooltip={renderTooltip}
                 />
               )}
             </XYChart>

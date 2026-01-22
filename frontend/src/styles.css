@@ -62,3 +62,14 @@ textarea {
 ::selection {
   background: rgba(59, 130, 246, 0.3);
 }
+
+/* Pie chart hover effects - using CSS to avoid React state re-render loops */
+.pie-slice-path {
+  opacity: 0.85;
+  transition: opacity 0.15s ease-out, transform 0.15s ease-out;
+}
+
+.pie-slice:hover .pie-slice-path {
+  opacity: 1;
+  filter: brightness(1.1);
+}

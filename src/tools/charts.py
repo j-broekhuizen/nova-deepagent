@@ -25,6 +25,18 @@ def build_chart_spec(
     Use this tool to create interactive charts that visualize financial data.
     The frontend will render the chart based on the returned specification.
 
+    WHEN TO USE THIS TOOL:
+    - Comparing multiple categories (e.g., "show spending breakdown" → 6 categories)
+    - Showing trends over time (e.g., "spending over the last month" → daily data)
+    - Visualizing proportions (e.g., "pie chart of expenses")
+    - Comparing items (e.g., "compare coffee vs fast food spending")
+
+    WHEN NOT TO USE THIS TOOL:
+    - Single value lookups (e.g., "How much did I spend on coffee?" → just return the number)
+    - Simple totals (e.g., "What's my total spending?" → just return the total)
+    - Questions about one specific merchant (e.g., "Starbucks spending?" → just return the amount)
+    - Yes/no questions (e.g., "Did I overspend?" → just answer directly)
+
     Args:
         chart_type: Type of chart to render.
             - "line": Line chart for trends over time
