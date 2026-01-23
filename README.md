@@ -12,7 +12,7 @@ Nova is a deep agent that helps users manage their finances through natural conv
 ## Setup
 
 ```bash
-cd demos/nova
+cd nova
 
 # Copy the example env file and add your keys
 cp .env.example .env
