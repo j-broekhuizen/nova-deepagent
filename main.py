@@ -33,7 +33,7 @@ from pathlib import Path
 # Load environment variables from .env
 from dotenv import load_dotenv
 
-load_dotenv(Path(__file__).parent / ".env")
+load_dotenv(Path(__file__).parent / ".env", override=True)
 
 # Model configuration
 MODEL = os.getenv("MODEL", "anthropic:claude-haiku-4-5-20251001")

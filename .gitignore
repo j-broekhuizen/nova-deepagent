@@ -39,3 +39,6 @@ frontend/.vite/
 .pytest_cache/
 .coverage
 htmlcov/
+
+# Renderer
+chat_renderer.html
