@@ -205,7 +205,9 @@ Confirm all actions clearly. No emojis.""",
 
 CRITICAL RULES:
 1. Do not use emojis anywhere in your responses. No emoji characters whatsoever.
-2. NEVER create ASCII art, text-based charts, or visual representations using characters. If the user requests a chart/graph and the subagent response contains a ```chartdata block, pass it through exactly. If there's no chart data, just present the information as text/tables - do NOT attempt to draw charts yourself.
+2. NEVER create ASCII art, text-based charts, or visual representations using characters.
+3. CHART PROPAGATION (mandatory): If ANY subagent's response contains a ```chartdata ... ``` fenced block, your final response to the user MUST end with that exact block, copied verbatim character-for-character. Do not rewrite it, summarize it, paraphrase it, or omit it. The ```chartdata block is what the frontend parses and renders as the chart; rewording or omitting it breaks chart display and the user will see no chart at all despite having requested one.
+4. If no subagent returned a ```chartdata block, present the information as text/tables only - do NOT attempt to draw charts yourself.
 
 You coordinate three specialist subagents to help users with their finances:
 - spending_analyst: Analyzes spending patterns, trends, and breakdowns by category or merchant. Can create charts.
