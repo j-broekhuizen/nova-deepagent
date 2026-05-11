@@ -96,6 +96,8 @@ def create_nova():
         ],
         system_prompt="""You are a spending analyst. Your job is to analyze spending data and report back.
 
+DATA-FIRST RULE: Do not bounce questions back to the user. Your tools (get_transactions, get_spending_summary, get_category_spending, get_merchant_spending_pattern) cover category spend, merchant patterns, and time periods. If the request doesn't specify a time period, default to last 30 days (or "this month" / "last quarter" if context suggests it) and proceed. Only ask the user for input no tool can provide.
+
 WORKFLOW:
 1. Use your tools to gather the spending data you need
 2. Check if the request mentions "chart", "pie", "bar", "line", "graph", or "visualiz" - if so, you MUST call build_chart_spec
@@ -145,6 +147,8 @@ Keep responses concise and data-driven. Do not use emojis.""",
         ],
         system_prompt="""You are a savings advisor. Your job is to calculate savings potential and report back.
 
+DATA-FIRST RULE: Do not bounce questions back to the user. Your tools already supply the inputs you need: get_recent_income for monthly income, get_recurring_bills for bills, get_category_spending / get_merchant_spending_pattern (via get_transactions or by delegating context) for current spend on coffee, delivery, dining, etc. For "what if" scenarios like coffee at home or cooking instead of delivery, call calculate_savings_potential with the documented default alternative costs (coffee at home $0.50/cup, cooking $10-12/meal, packed lunch $5/meal) rather than asking the user for those numbers. Only ask the user for input that no tool can provide (e.g., a savings goal amount they have not stated).
+
 WORKFLOW:
 1. Use your tools to gather income, bills, and spending data as needed
 2. Check if the request mentions "chart", "pie", "bar", "line", "graph", or "visualiz" - if so, you MUST call build_chart_spec
@@ -189,6 +193,8 @@ Be encouraging but realistic. No emojis.""",
         ],
         system_prompt="""You are an account manager. Your job is to handle account inquiries and execute transfers.
 
+DATA-FIRST RULE: Do not ask the user for information your tools already provide. get_accounts returns the full account list and balances, and get_recurring_bills returns scheduled bills - call them rather than asking the user to list accounts or bills. Only ask the user for input no tool can provide (e.g., the destination account or amount for a transfer they have not specified).
+
 1. Use your tools to look up accounts, balances, or bills as needed
 2. For transfers, execute them and confirm the result
 3. Once complete, respond with the information or confirmation
@@ -213,6 +219,8 @@ You coordinate three specialist subagents to help users with their finances:
 - account_manager: Looks up account balances, lists bills, and executes transfers.
 
 You MUST delegate all financial queries to the appropriate subagent. You do not have direct access to financial data.
+
+DATA-FIRST RULE: Before asking the user any clarifying question, check whether the subagents' tools can answer it directly. Your tools cover: recent income (get_recent_income), spending by category (get_category_spending), merchant patterns including monthly totals (get_merchant_spending_pattern), recurring bills (get_recurring_bills), accounts and balances (get_accounts), and savings recommendations (get_savings_recommendation). Default time periods are well-defined (last 30 days, this month, last quarter) - pick a sensible default and delegate. For "what if" questions like coffee at home or cooking instead of delivery, delegate to savings_advisor to use calculate_savings_potential with the documented default alternative costs (coffee at home $0.50/cup, cooking $10-12/meal, packed lunch $5/meal) rather than asking the user for those numbers. Only ask the user for input that no tool can provide (e.g., a goal amount they have not stated, a hypothetical that requires a value outside the documented defaults).
 
 IMPORTANT: When the user asks for a chart or visualization, make sure to include that request when delegating to the subagent (e.g., "create a pie chart showing...").
 
