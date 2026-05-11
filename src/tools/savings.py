@@ -23,7 +23,8 @@ def get_savings_recommendation() -> dict:
     - Upcoming recurring bills
     - Current account balances
 
-    Use this when the user asks about saving money or after detecting a recent paycheck.
+    Use this WHENEVER the user asks for a savings recommendation, savings target, or "how much should I save".
+    Do NOT ask the user for their income or bill amounts first — this tool retrieves them internally.
 
     Returns:
         Recommendation with suggested savings amount and reasoning.
@@ -93,6 +94,10 @@ def calculate_savings_potential(
     Use this for "what if" scenarios like:
     - "How much could I save making coffee at home?" (category="coffee", alternative_cost=0.50)
     - "How much would I save cooking instead of ordering delivery?" (category="delivery", alternative_cost=10.00)
+
+    Use this directly with sensible defaults (coffee at home ≈ $0.50/cup, home-cooked meal ≈ $3-5/serving)
+    when the user asks a "what if" question. Do NOT ask the user for their current category spend —
+    this tool retrieves it from transaction history.
 
     Args:
         category: The spending category to analyze (e.g., "coffee", "delivery", "fast_food").
