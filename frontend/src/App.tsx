@@ -9,10 +9,12 @@ interface NovaState {
   }>;
 }
 
+const LANGGRAPH_PORT = import.meta.env.VITE_LANGGRAPH_PORT || "2024";
+
 export function App() {
   const stream = useStream<NovaState>({
     assistantId: "nova",
-    apiUrl: "http://localhost:2024",
+    apiUrl: `http://localhost:${LANGGRAPH_PORT}`,
     fetchStateHistory: true,
   });
 

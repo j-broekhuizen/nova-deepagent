@@ -42,3 +42,4 @@ htmlcov/
 
 # Renderer
 chat_renderer.html
+scripts/*

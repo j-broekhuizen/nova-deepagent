@@ -35,6 +35,16 @@ from dotenv import load_dotenv
 
 load_dotenv(Path(__file__).parent / ".env", override=True)
 
+# Enable Datadog LLM Observability
+from ddtrace.llmobs import LLMObs
+
+LLMObs.enable(
+    ml_app=os.getenv("DD_LLMOBS_ML_APP", "jakes-deepagent-nova"),
+    api_key=os.getenv("DD_API_KEY"),
+    site="us5.datadoghq.com",
+    agentless_enabled=True,
+)
+
 # Model configuration
 MODEL = os.getenv("MODEL", "anthropic:claude-haiku-4-5-20251001")
 

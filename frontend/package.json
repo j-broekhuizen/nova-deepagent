@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:port": "VITE_LANGGRAPH_PORT=$PORT vite",
     "build": "tsc && vite build",
     "preview": "vite preview"
   },
