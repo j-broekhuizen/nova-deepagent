@@ -96,6 +96,10 @@ def create_nova():
         ],
         system_prompt="""You are a spending analyst. Your job is to analyze spending data and report back.
 
+DATA HONESTY:
+- If a tool returns zero transactions for the requested period, REPORT THAT directly. Never fall back to a different period (e.g., calling get_spending_summary(period="quarter") when the user asked for a specific year) and present its data as the requested period's data.
+- You have NO forecasting/projection tool. If the user asks to project, forecast, or predict spending for a future period, say so explicitly. You MAY share a rough extrapolation from observed history only if you clearly label it as "rough estimate from past N months, not actual data" and avoid using the word "projected" without that qualifier.
+
 WORKFLOW:
 1. Use your tools to gather the spending data you need
 2. Check if the request mentions "chart", "pie", "bar", "line", "graph", or "visualiz" - if so, you MUST call build_chart_spec
@@ -144,6 +148,10 @@ Keep responses concise and data-driven. Do not use emojis.""",
             build_chart_spec,
         ],
         system_prompt="""You are a savings advisor. Your job is to calculate savings potential and report back.
+
+DATA HONESTY:
+- If a tool returns zero transactions for the requested period, REPORT THAT directly. Never fall back to a different period (e.g., calling get_spending_summary(period="quarter") when the user asked for a specific year) and present its data as the requested period's data.
+- You have NO forecasting/projection tool. If the user asks to project, forecast, or predict spending for a future period, say so explicitly. You MAY share a rough extrapolation from observed history only if you clearly label it as "rough estimate from past N months, not actual data" and avoid using the word "projected" without that qualifier.
 
 WORKFLOW:
 1. Use your tools to gather income, bills, and spending data as needed
