@@ -268,6 +268,22 @@ Confirm all actions clearly. No emojis.""",
         checkpointer=checkpointer,
     )
 
+    # Propagate provider/model metadata to every child LLM run so per-span
+    # cost rollups and the LangSmith Messages-view adapter resolve correctly;
+    # deepagents builds the chat model from a string identifier, so child
+    # runs would otherwise carry no ls_provider / ls_model_name fields.
+    agent = agent.with_config(
+        {
+            "run_name": "nova",
+            "metadata": {
+                "ls_provider": "anthropic",
+                "ls_model_name": "claude-haiku-4-5-20251001",
+                "ls_message_format": "anthropic",
+                "environment": os.getenv("NOVA_ENVIRONMENT", "production"),
+            },
+        }
+    )
+
     return agent
 
 
