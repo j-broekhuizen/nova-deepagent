@@ -26,8 +26,16 @@ from dotenv import load_dotenv
 
 load_dotenv(Path(__file__).parent / ".env", override=True)
 
-# Model configuration
-MODEL = os.getenv("MODEL", "anthropic:claude-haiku-4-5-20251001")
+from langchain_anthropic import ChatAnthropic
+
+# Model configuration. Wrap in an explicit client so a transient upstream
+# cancellation retries instead of surfacing an empty assistant message.
+MODEL_NAME = os.getenv("MODEL", "claude-haiku-4-5-20251001")
+MODEL = ChatAnthropic(
+    model=MODEL_NAME,
+    timeout=30,
+    max_retries=2,
+)
 
 # Context Hub configuration
 HUB_AGENT_NAME = "nova"
