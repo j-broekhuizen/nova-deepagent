@@ -6,8 +6,12 @@ from typing import Literal
 
 from langchain_core.tools import tool
 
-from src.data.mock_data import get_mock_transactions
+from src.data.mock_data import get_mock_recurring_bills, get_mock_transactions
 from src.models.chart import AxisConfig, ChartSpec, ChartType, FormatterType, Series
+
+# Subscription charges (Netflix, Spotify, ...) live in recurring bills, not in
+# the transaction stream — spending tools must consult both for these categories.
+_RECURRING_BILL_CATEGORIES = {"subscription"}
 
 
 @tool
@@ -121,6 +125,7 @@ def get_category_spending(
     """
     cutoff = datetime.now() - timedelta(days=days)
     transactions = get_mock_transactions()
+    recurring_bills = get_mock_recurring_bills()
 
     result = {}
     combined_total = 0
@@ -150,14 +155,27 @@ def get_category_spending(
         ]
         merchant_totals.sort(key=lambda x: x["total"], reverse=True)
 
-        category_total = round(sum(abs(t.amount) for t in category_txns), 2)
+        category_total = sum(abs(t.amount) for t in category_txns)
+
+        category_bills = (
+            [b for b in recurring_bills if b.category == category]
+            if category in _RECURRING_BILL_CATEGORIES
+            else []
+        )
+        recurring_total = sum(b.amount for b in category_bills)
+        category_total += recurring_total
+
         combined_total += category_total
 
-        result[category] = {
-            "total": category_total,
+        entry = {
+            "total": round(category_total, 2),
             "transaction_count": len(category_txns),
             "top_merchants": merchant_totals[:5],
         }
+        if category_bills:
+            entry["recurring_bills"] = [b.model_dump() for b in category_bills]
+            entry["recurring_total"] = round(recurring_total, 2)
+        result[category] = entry
 
     return {
         "categories": result,
@@ -195,7 +213,27 @@ def get_merchant_spending_pattern(
         and merchant_name.lower() in t.merchant.normalized_name.lower()
     ]
 
+    matching_bills = [
+        b
+        for b in get_mock_recurring_bills()
+        if merchant_name.lower() in b.name.lower()
+    ]
+
     if not merchant_txns:
+        if matching_bills:
+            monthly_total = round(sum(b.amount for b in matching_bills), 2)
+            return {
+                "merchant": merchant_name,
+                "period_days": days,
+                "total_spent": monthly_total,
+                "transaction_count": 0,
+                "recurring_bills": [b.model_dump() for b in matching_bills],
+                "recurring_monthly_total": monthly_total,
+                "note": (
+                    f"'{merchant_name}' is billed as a recurring subscription, "
+                    "not as individual transactions."
+                ),
+            }
         return {"error": f"No transactions found for '{merchant_name}' in the last {days} days"}
 
     # Analyze patterns
@@ -219,7 +257,7 @@ def get_merchant_spending_pattern(
 
     weeks = days / 7
 
-    return {
+    response = {
         "merchant": merchant_name,
         "period_days": days,
         "total_spent": round(total, 2),
@@ -233,3 +271,9 @@ def get_merchant_spending_pattern(
         "busiest_day": max(day_counts.items(), key=lambda x: x[1])[0] if day_counts else None,
         "by_day_of_week": {k: round(v, 2) for k, v in day_amounts.items()},
     }
+    if matching_bills:
+        response["recurring_bills"] = [b.model_dump() for b in matching_bills]
+        response["recurring_monthly_total"] = round(
+            sum(b.amount for b in matching_bills), 2
+        )
+    return response

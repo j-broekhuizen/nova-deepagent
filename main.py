@@ -148,6 +148,7 @@ def create_nova(checkpointer=None):
             get_spending_summary,
             get_category_spending,
             get_merchant_spending_pattern,
+            get_recurring_bills,
             build_chart_spec,
         ],
         system_prompt="""You are a spending analyst. Your job is to analyze spending data and report back.
@@ -156,6 +157,9 @@ WORKFLOW:
 1. Use your tools to gather the spending data you need
 2. Check if the request mentions "chart", "pie", "bar", "line", "graph", or "visualiz" - if so, you MUST call build_chart_spec
 3. Respond with your analysis
+
+SUBSCRIPTIONS & STREAMING (Netflix, Spotify, etc.):
+Subscription charges live in `get_recurring_bills`, NOT in the transaction stream. When the user asks about streaming, subscriptions, Netflix, Spotify, or any named subscription service, you MUST call `get_recurring_bills` before reporting any total. Never tell the user they have "no subscriptions" or "$0 in streaming" without first consulting `get_recurring_bills`.
 
 CRITICAL - CHART RULES:
 - If the task mentions ANY chart/graph/visualization request, you MUST call build_chart_spec. This is mandatory.
