@@ -1,6 +1,8 @@
 # Nova - Personal Financial Assistant
 
-Nova is a deep agent that helps users manage their finances through natural conversation.
+Nova is a deep agent that helps users manage their finances through natural
+conversation. Its agent instructions and skills are versioned in **LangSmith
+Context Hub** — this repository contains only the runtime code.
 
 ## Features
 
@@ -21,9 +23,9 @@ cp .env.example .env
 Edit `.env` with your API keys:
 ```
 ANTHROPIC_API_KEY=sk-ant-...
-LANGSMITH_API_KEY=lsv2_pt_...  
-LANGSMITH_PROJECT=nova         
-LANGSMITH_TRACING=true          
+LANGSMITH_API_KEY=lsv2_pt_...
+LANGSMITH_PROJECT=nova
+LANGSMITH_TRACING=true
 ```
 
 ## Usage
@@ -34,29 +36,48 @@ uv run main.py "your question here"
 
 # Interactive mode
 uv run main.py -i
+
+# Run via langgraph dev + frontend
+langgraph dev                                    # backend on :2024
+cd frontend && npm run dev                       # frontend on :5174
 ```
 
 ## Architecture
 
+Nova's runtime code lives in this repo. Its **memory and skills are pulled
+from Context Hub** at every agent invocation via `ContextHubBackend` —
+nothing about the agent's behavior is stored in this repo.
+
 ```
 nova/
-├── main.py                 # Main entry point
-├── AGENTS.md               # Nova's personality and guidelines
-├── pyproject.toml          # Dependencies
-├── src/                    # Main package
+├── main.py                 # Entry point; builds the agent against Context Hub
+├── graph.py                # LangGraph export for `langgraph dev`
+├── pyproject.toml          # Python dependencies
+├── frontend/               # React UI for `langgraph dev`
+├── scripts/                # Eval helpers (test question runners)
+├── src/                    # Tools and mock data
 │   ├── models/
-│   │   ├── transaction.py  # Transaction, MerchantInfo, Category
-│   │   └── account.py      # Account, RecurringBill
 │   ├── tools/
-│   │   ├── transactions.py # get_transactions, get_recent_income
-│   │   ├── spending.py     # spending summaries and patterns
-│   │   ├── savings.py      # recommendations and transfers
-│   │   ├── accounts.py     # balances and bills
-│   │   └── enrichment.py   # categorize transactions
 │   └── data/
-│       └── mock_data.py    # Realistic transaction generator
 └── tests/
 ```
+
+## Memory and skills (Context Hub)
+
+| Repo | Type | Purpose |
+|---|---|---|
+| `nova` | agent | Top-level manifest. Contains `AGENTS.md` (hard rules + delegation policy) and three `SkillEntry` links to the skills below. |
+| `currency-formatting` | skill | How to render dollar amounts and percentages. |
+| `chart-data-emission` | skill | When and how to emit `chartdata` blocks. |
+| `category-vocabulary` | skill | Canonical spending-category names and aliases. |
+
+The skill links are **unpinned** — they auto-resolve to the latest skill commit.
+This means a fix proposed by LangSmith Engine to a skill is picked up on the
+next agent invocation, no restart required.
+
+To edit these files, open them in the LangSmith Context Hub UI (Context →
+nova, or any of the skill repos). Engine-proposed fixes commit directly to
+Context Hub once accepted.
 
 ## Tools
 
@@ -73,6 +94,7 @@ nova/
 | `get_accounts`                  | List accounts and balances      |
 | `get_recurring_bills`           | List monthly bills              |
 | `enrich_transaction`            | Categorize raw descriptions     |
+| `build_chart_spec`              | Build chart specs for the UI    |
 
 ## Mock Data
 
@@ -83,7 +105,3 @@ Nova uses generated mock data for demonstration:
 - Recurring bills: Rent, utilities, subscriptions
 
 The data is designed to produce realistic spending patterns that match common scenarios.
-
-## Customization
-
-Edit `AGENTS.md` to customize Nova's personality and response style.
