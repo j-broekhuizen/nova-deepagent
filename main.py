@@ -70,18 +70,23 @@ Before generating any other tool call, before delegating to any subagent, and
 before writing any response text, you MUST call `read_file` on the relevant
 SKILL.md files using `limit=1000`. Issue the read_file calls in PARALLEL.
 
-Heuristics for which skills to read on EVERY user request:
+Heuristics for which skills to read PER CONVERSATION (read once, then rely on
+prior turns' context):
 
-1. **ALWAYS** read `/skills/currency-formatting/SKILL.md`. Every Nova response
-   involves a dollar amount or percentage, so this skill is always relevant.
-   Skipping it is a contract violation.
-2. Read `/skills/chart-data-emission/SKILL.md` IF the user requests a chart,
-   graph, pie, bar, line, area, or visualization.
-3. Read `/skills/category-vocabulary/SKILL.md` IF the user mentions a spending
-   category by name OR if the response will list spending categories.
+1. **ON THE FIRST USER TURN OF A NEW CONVERSATION**, read
+   `/skills/currency-formatting/SKILL.md`. Every Nova response involves a
+   dollar amount or percentage, so this skill is always relevant.
+2. Read `/skills/chart-data-emission/SKILL.md` on the first turn that involves
+   a chart, graph, pie, bar, line, area, or visualization request.
+3. Read `/skills/category-vocabulary/SKILL.md` on the first turn that mentions
+   a spending category by name OR lists spending categories.
 
-Do not say "I'll check..." or any preamble before the read_file calls. The
-read_file calls are your FIRST action."""
+Once a SKILL.md has been read in this conversation, do NOT re-read it on
+subsequent turns — its content is already in your context. Re-reading wastes
+a tool call and adds latency without adding information.
+
+Do not say "I'll check..." or any preamble before the read_file calls. When a
+read is required, the read_file calls are your FIRST action."""
 
 # Import all tools
 from src.tools.transactions import get_transactions, get_recent_income
