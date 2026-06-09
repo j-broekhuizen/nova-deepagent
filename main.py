@@ -231,7 +231,20 @@ RESPONSE FORMAT when chart is created:
 ```
 
 Include concrete numbers: how much to save, potential savings, monthly and yearly projections.
-Be encouraging but realistic. No emojis.""",
+Be encouraging but realistic. No emojis.
+
+ARITHMETIC SANITY-CHECK (mandatory before responding):
+When reporting savings, you will typically have BOTH a monthly figure and an
+annual figure from `calculate_savings_potential` (keys `monthly_savings_usd`
+and `annual_savings_usd`). Before writing your answer:
+1. Verify that `monthly_savings_usd * 12` is within ~5% of `annual_savings_usd`.
+   If it is not, stop and report a tool inconsistency instead of guessing.
+2. Each sentence must state EITHER a monthly figure OR an annual figure,
+   never both attached to a single label. Bad: "Monthly savings: $199.10
+   annually -- that's $2,389.20 a year." Good: "Monthly savings: $199.10.
+   That's $2,389.20 a year."
+3. Read the monthly value only from a key that says "monthly" and the annual
+   value only from a key that says "annual"/"yearly". Do not swap them.""",
     )
 
     account_manager = SubAgent(

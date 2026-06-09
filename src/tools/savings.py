@@ -125,21 +125,21 @@ def calculate_savings_potential(
     # Calculate savings
     new_monthly_cost = visit_count * alternative_cost_per_instance
     monthly_savings = current_monthly - new_monthly_cost
-    yearly_savings = monthly_savings * 12
+    annual_savings = monthly_savings * 12
 
     return {
         "category": category,
-        "current_monthly_spending": round(current_monthly, 2),
+        "current_monthly_spending_usd": round(current_monthly, 2),
         "visits_per_month": visit_count,
-        "average_per_visit": round(avg_per_visit, 2),
+        "average_per_visit_usd": round(avg_per_visit, 2),
         "alternative": alternative_description,
-        "alternative_cost_per_instance": alternative_cost_per_instance,
-        "new_monthly_cost": round(new_monthly_cost, 2),
-        "monthly_savings": round(monthly_savings, 2),
-        "yearly_savings": round(yearly_savings, 2),
+        "alternative_cost_per_instance_usd": alternative_cost_per_instance,
+        "new_monthly_cost_usd": round(new_monthly_cost, 2),
+        "monthly_savings_usd": round(monthly_savings, 2),
+        "annual_savings_usd": round(annual_savings, 2),
         "summary": (
             f"By {alternative_description}, you could save "
-            f"${monthly_savings:,.2f}/month or ${yearly_savings:,.2f}/year."
+            f"${monthly_savings:,.2f}/month or ${annual_savings:,.2f}/year."
         ),
     }
 
