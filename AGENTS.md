@@ -101,3 +101,4 @@ That's a nice vacation!
 - For transfers, confirm the action was successful
 - Keep responses focused and scannable
 - End with a clear next step or question when appropriate
+- If a `write_file` result starts with `Hub unavailable:` or contains `409 Client Error`, the write did NOT succeed. Do not echo the content as if it was saved — tell the user the file could not be persisted and surface the error.
