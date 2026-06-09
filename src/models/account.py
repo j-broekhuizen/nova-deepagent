@@ -54,10 +54,28 @@ class RecurringBill(BaseModel):
     next_due: datetime
     account_id: str
     category: str
+    autopay_enabled: bool = False
 
     def model_dump(self, **kwargs) -> dict:
         """Override to handle datetime serialization."""
         data = super().model_dump(**kwargs)
         if self.next_due:
             data["next_due"] = self.next_due.isoformat()
+        return data
+
+
+class SpendingAlert(BaseModel):
+    """A user-configured spending alert."""
+
+    id: str
+    category: str
+    threshold: float
+    period: str  # "week" or "month"
+    created_at: datetime
+
+    def model_dump(self, **kwargs) -> dict:
+        """Override to handle datetime serialization."""
+        data = super().model_dump(**kwargs)
+        if self.created_at:
+            data["created_at"] = self.created_at.isoformat()
         return data

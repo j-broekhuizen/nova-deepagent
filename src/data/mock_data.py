@@ -7,7 +7,7 @@ Data is generated once per module load and cached.
 import random
 from datetime import datetime, timedelta
 
-from src.models.account import Account, AccountType, RecurringBill
+from src.models.account import Account, AccountType, RecurringBill, SpendingAlert
 from src.models.transaction import (
     Transaction,
     MerchantInfo,
@@ -248,6 +248,7 @@ def _generate_transactions() -> list[Transaction]:
 _accounts: list[Account] | None = None
 _transactions: list[Transaction] | None = None
 _recurring_bills: list[RecurringBill] | None = None
+_spending_alerts: list[SpendingAlert] = []
 
 
 def get_mock_accounts() -> list[Account]:
@@ -272,6 +273,24 @@ def get_mock_recurring_bills() -> list[RecurringBill]:
     if _recurring_bills is None:
         _recurring_bills = _generate_recurring_bills()
     return _recurring_bills
+
+
+def get_recurring_bill_by_id(bill_id: str) -> RecurringBill | None:
+    """Get a recurring bill by ID."""
+    for bill in get_mock_recurring_bills():
+        if bill.id == bill_id:
+            return bill
+    return None
+
+
+def get_spending_alerts() -> list[SpendingAlert]:
+    """Get all configured spending alerts."""
+    return _spending_alerts
+
+
+def add_spending_alert(alert: SpendingAlert) -> None:
+    """Persist a new spending alert."""
+    _spending_alerts.append(alert)
 
 
 def get_account_by_id(account_id: str) -> Account | None:

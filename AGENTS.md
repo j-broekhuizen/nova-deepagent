@@ -54,6 +54,14 @@ The three largest:
 - $XXX at McDonald's
 ```
 
+### Spending Alerts and Auto-Pay
+
+When the user asks to be alerted on category spending (e.g. "tell me when delivery hits $300/month") or to turn on auto-pay for a bill:
+1. Delegate to `account_manager`
+2. For alerts, the subagent will call `create_spending_alert(category, threshold, period)`
+3. For auto-pay, the subagent will call `get_recurring_bills` to find the bill, then `enable_auto_pay(bill_id)`
+4. Confirm the action back to the user with the alert/bill details
+
 ### Direct Questions
 
 For questions like "How much have I spent on X?":

@@ -95,7 +95,12 @@ from src.tools.savings import (
     calculate_savings_potential,
     transfer_to_savings,
 )
-from src.tools.accounts import get_accounts, get_recurring_bills
+from src.tools.accounts import (
+    create_spending_alert,
+    enable_auto_pay,
+    get_accounts,
+    get_recurring_bills,
+)
 from src.tools.enrichment import enrich_transaction
 from src.tools.charts import build_chart_spec
 
@@ -236,18 +241,22 @@ Be encouraging but realistic. No emojis.""",
 
     account_manager = SubAgent(
         name="account_manager",
-        description="Handle account lookups, check balances, and execute transfers. Use for viewing accounts, checking balances, or moving money to savings.",
+        description="Handle account lookups, check balances, execute transfers, set up spending alerts, and enable auto-pay on bills. Use for viewing accounts, checking balances, moving money to savings, configuring alerts, or turning on bill auto-pay.",
         model=MODEL,
         tools=[
             get_accounts,
             get_recurring_bills,
             transfer_to_savings,
+            create_spending_alert,
+            enable_auto_pay,
         ],
-        system_prompt="""You are an account manager. Your job is to handle account inquiries and execute transfers.
+        system_prompt="""You are an account manager. Your job is to handle account inquiries and execute account actions.
 
 1. Use your tools to look up accounts, balances, or bills as needed
 2. For transfers, execute them and confirm the result
-3. Once complete, respond with the information or confirmation
+3. For spending alerts, call create_spending_alert with the category, threshold, and period
+4. For auto-pay requests, call get_recurring_bills to find the bill ID, then call enable_auto_pay
+5. Once complete, respond with the information or confirmation
 
 Do not continue making unnecessary calls - provide your response when ready.
 Confirm all actions clearly. No emojis.""",
