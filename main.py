@@ -46,8 +46,56 @@ from rich.markdown import Markdown
 from rich.status import Status
 
 from deepagents import create_deep_agent, SubAgent
-from deepagents.backends import CompositeBackend, ContextHubBackend
+from deepagents.backends import CompositeBackend, ContextHubBackend, StateBackend
+from deepagents.backends.protocol import BackendProtocol, EditResult, WriteResult
 from deepagents.middleware.skills import SkillsMiddleware
+
+
+class ReadOnlyHubBackend(BackendProtocol):
+    """Proxies reads to a Context Hub backend and routes writes to an ephemeral StateBackend so agent-authored files never persist to the shared workspace."""
+
+    def __init__(self, hub: BackendProtocol, scratch: BackendProtocol) -> None:
+        self._hub = hub
+        self._scratch = scratch
+
+    def __getattr__(self, name: str):
+        return getattr(self._hub, name)
+
+    def ls(self, path):
+        return self._hub.ls(path)
+
+    async def als(self, path):
+        return await self._hub.als(path)
+
+    def read(self, file_path, offset=0, limit=2000):
+        return self._hub.read(file_path, offset, limit)
+
+    async def aread(self, file_path, offset=0, limit=2000):
+        return await self._hub.aread(file_path, offset, limit)
+
+    def glob(self, pattern, path=None):
+        return self._hub.glob(pattern, path)
+
+    async def aglob(self, pattern, path=None):
+        return await self._hub.aglob(pattern, path)
+
+    def grep(self, pattern, path=None, glob=None):
+        return self._hub.grep(pattern, path, glob)
+
+    async def agrep(self, pattern, path=None, glob=None):
+        return await self._hub.agrep(pattern, path, glob)
+
+    def write(self, file_path, content):
+        return self._scratch.write(file_path, content)
+
+    async def awrite(self, file_path, content):
+        return await self._scratch.awrite(file_path, content)
+
+    def edit(self, file_path, old_string, new_string, replace_all=False):
+        return EditResult(error=f"Refusing to edit {file_path}: Context Hub workspace is read-only. Scratch work belongs in reasoning, not on disk.")
+
+    async def aedit(self, file_path, old_string, new_string, replace_all=False):
+        return self.edit(file_path, old_string, new_string, replace_all)
 
 # Custom skills-middleware prompt template that turns "progressive disclosure"
 # into a mandatory consultation rule. The model sees this in the SAME content
@@ -121,14 +169,16 @@ def _build_hub_backend() -> tuple[CompositeBackend, list[str]]:
     # get_linked_entries() returns {path: repo_handle} like
     # {"skills/currency-formatting/": "currency-formatting", ...}.
     linked = agent_backend.get_linked_entries()
-    routes: dict[str, ContextHubBackend] = {}
+    scratch = StateBackend()
+    routes: dict[str, BackendProtocol] = {}
     for path, handle in linked.items():
         mount = path if path.startswith("/") else "/" + path
         if not mount.endswith("/"):
             mount += "/"
-        routes[mount] = ContextHubBackend(handle, client=client)
+        routes[mount] = ReadOnlyHubBackend(ContextHubBackend(handle, client=client), scratch)
 
-    backend = CompositeBackend(default=agent_backend, routes=routes) if routes else agent_backend
+    hub_default = ReadOnlyHubBackend(agent_backend, scratch)
+    backend = CompositeBackend(default=hub_default, routes=routes) if routes else hub_default
     _HUB_BACKEND_CACHE = (backend, sorted(routes.keys()))
     return _HUB_BACKEND_CACHE
 
