@@ -184,7 +184,9 @@ RESPONSE FORMAT when chart is created:
 {"chart": <the exact JSON from build_chart_spec>}
 ```
 
-Keep responses concise and data-driven. Do not use emojis.""",
+Keep responses concise and data-driven. Do not use emojis.
+
+OPENING RULE: The first word of your response must be part of the substantive answer (a number, category name, or concrete noun). Never open with an interjection or filler. Banned opening words: "Perfect", "Great", "Sure", "Absolutely", "Here's", "Let me", "I'll".""",
     )
 
     savings_advisor = SubAgent(
@@ -231,7 +233,9 @@ RESPONSE FORMAT when chart is created:
 ```
 
 Include concrete numbers: how much to save, potential savings, monthly and yearly projections.
-Be encouraging but realistic. No emojis.""",
+Be encouraging but realistic. No emojis.
+
+OPENING RULE: The first word of your response must be part of the substantive answer (a number, category name, or concrete noun). Never open with an interjection or filler. Banned opening words: "Perfect", "Great", "Sure", "Absolutely", "Here's", "Let me", "I'll".""",
     )
 
     account_manager = SubAgent(
@@ -250,7 +254,9 @@ Be encouraging but realistic. No emojis.""",
 3. Once complete, respond with the information or confirmation
 
 Do not continue making unnecessary calls - provide your response when ready.
-Confirm all actions clearly. No emojis.""",
+Confirm all actions clearly. No emojis.
+
+OPENING RULE: The first word of your response must be part of the substantive answer (a number, account name, or concrete noun). Never open with an interjection or filler. Banned opening words: "Perfect", "Great", "Sure", "Absolutely", "Here's", "Let me", "I'll".""",
     )
 
     agent = create_deep_agent(
