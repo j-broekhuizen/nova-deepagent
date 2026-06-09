@@ -1,13 +1,4 @@
 #!/usr/bin/env python3
-# /// script
-# requires-python = ">=3.11"
-# dependencies = [
-#     "deepagents",
-#     "pydantic>=2.0.0",
-#     "rich>=13.0.0",
-#     "python-dotenv>=1.0.0",
-# ]
-# ///
 """
 Nova - Personal Financial Assistant
 
@@ -35,29 +26,62 @@ from dotenv import load_dotenv
 
 load_dotenv(Path(__file__).parent / ".env", override=True)
 
-# Enable Datadog LLM Observability
-from ddtrace.llmobs import LLMObs
-
-LLMObs.enable(
-    ml_app=os.getenv("DD_LLMOBS_ML_APP", "jakes-deepagent-nova"),
-    api_key=os.getenv("DD_API_KEY"),
-    site="us5.datadoghq.com",
-    agentless_enabled=True,
-)
-
 # Model configuration
 MODEL = os.getenv("MODEL", "anthropic:claude-haiku-4-5-20251001")
+
+# Context Hub configuration
+HUB_AGENT_NAME = "nova"
+HUB_WORKSPACE_ID = os.getenv(
+    "NOVA_CONTEXT_HUB_WORKSPACE", "4015447c-43ab-4414-8539-633d4cb47217"
+)
 
 # Add the directory to the path for imports
 sys.path.insert(0, str(Path(__file__).parent))
 
 from langchain_core.messages import HumanMessage, AIMessage
+from langsmith import Client
 from rich.console import Console
 from rich.panel import Panel
 from rich.markdown import Markdown
 from rich.status import Status
 
 from deepagents import create_deep_agent, SubAgent
+from deepagents.backends import CompositeBackend, ContextHubBackend
+from deepagents.middleware.skills import SkillsMiddleware
+
+# Custom skills-middleware prompt template that turns "progressive disclosure"
+# into a mandatory consultation rule. The model sees this in the SAME content
+# block as the skills list, which has more local authority than putting the
+# directive in a separate top-level system_prompt block (Haiku-tier models
+# would otherwise probabilistically skip the read).
+SKILLS_PROMPT_TEMPLATE = """## Skills System
+
+You have access to a versioned skills library that holds Nova's behavioral rules.
+
+{skills_locations}{skills_load_warnings}
+
+**Available Skills:**
+
+{skills_list}
+
+**MANDATORY SKILL CONSULTATION (non-negotiable):**
+
+Before generating any other tool call, before delegating to any subagent, and
+before writing any response text, you MUST call `read_file` on the relevant
+SKILL.md files using `limit=1000`. Issue the read_file calls in PARALLEL.
+
+Heuristics for which skills to read on EVERY user request:
+
+1. **ALWAYS** read `/skills/currency-formatting/SKILL.md`. Every Nova response
+   involves a dollar amount or percentage, so this skill is always relevant.
+   Skipping it is a contract violation.
+2. Read `/skills/chart-data-emission/SKILL.md` IF the user requests a chart,
+   graph, pie, bar, line, area, or visualization.
+3. Read `/skills/category-vocabulary/SKILL.md` IF the user mentions a spending
+   category by name OR if the response will list spending categories.
+
+Do not say "I'll check..." or any preamble before the read_file calls. The
+read_file calls are your FIRST action."""
 
 # Import all tools
 from src.tools.transactions import get_transactions, get_recent_income
@@ -78,9 +102,41 @@ from src.tools.charts import build_chart_spec
 EXAMPLE_DIR = Path(__file__).parent
 console = Console()
 
+_HUB_BACKEND_CACHE: tuple[CompositeBackend, list[str]] | None = None
 
-def create_nova():
+
+def _build_hub_backend() -> tuple[CompositeBackend, list[str]]:
+    """Build a CompositeBackend rooted at the nova Context Hub repo, with each
+    linked skill repo mounted at its declared path. Returns the backend plus
+    the list of linked skill paths (for diagnostics / fallback messaging).
+    """
+    global _HUB_BACKEND_CACHE
+    if _HUB_BACKEND_CACHE is not None:
+        return _HUB_BACKEND_CACHE
+
+    client = Client(workspace_id=HUB_WORKSPACE_ID)
+    agent_backend = ContextHubBackend(HUB_AGENT_NAME, client=client)
+
+    # Resolve linked skill repos declared on the nova manifest.
+    # get_linked_entries() returns {path: repo_handle} like
+    # {"skills/currency-formatting/": "currency-formatting", ...}.
+    linked = agent_backend.get_linked_entries()
+    routes: dict[str, ContextHubBackend] = {}
+    for path, handle in linked.items():
+        mount = path if path.startswith("/") else "/" + path
+        if not mount.endswith("/"):
+            mount += "/"
+        routes[mount] = ContextHubBackend(handle, client=client)
+
+    backend = CompositeBackend(default=agent_backend, routes=routes) if routes else agent_backend
+    _HUB_BACKEND_CACHE = (backend, sorted(routes.keys()))
+    return _HUB_BACKEND_CACHE
+
+
+def create_nova(checkpointer=None):
     """Create Nova."""
+
+    backend, _ = _build_hub_backend()
 
     # Define subagents
     spending_analyst = SubAgent(
@@ -197,35 +253,22 @@ Do not continue making unnecessary calls - provide your response when ready.
 Confirm all actions clearly. No emojis.""",
     )
 
-    return create_deep_agent(
+    agent = create_deep_agent(
         model=MODEL,
-        memory=[str(EXAMPLE_DIR / "AGENTS.md")],
+        backend=backend,
+        memory=["/AGENTS.md"],
+        middleware=[
+            SkillsMiddleware(
+                backend=backend,
+                sources=["/skills/"],
+                system_prompt=SKILLS_PROMPT_TEMPLATE,
+            ),
+        ],
         subagents=[spending_analyst, savings_advisor, account_manager],
-        system_prompt="""You are Nova, a personal financial assistant and orchestrator.
-
-CRITICAL RULES:
-1. Do not use emojis anywhere in your responses. No emoji characters whatsoever.
-2. NEVER create ASCII art, text-based charts, or visual representations using characters. If the user requests a chart/graph and the subagent response contains a ```chartdata block, pass it through exactly. If there's no chart data, just present the information as text/tables - do NOT attempt to draw charts yourself.
-
-You coordinate three specialist subagents to help users with their finances:
-- spending_analyst: Analyzes spending patterns, trends, and breakdowns by category or merchant. Can create charts.
-- savings_advisor: Calculates savings potential, runs "what if" scenarios, recommends savings amounts. Can create charts.
-- account_manager: Looks up account balances, lists bills, and executes transfers.
-
-You MUST delegate all financial queries to the appropriate subagent. You do not have direct access to financial data.
-
-IMPORTANT: When the user asks for a chart or visualization, make sure to include that request when delegating to the subagent (e.g., "create a pie chart showing...").
-
-For complex requests, you may need to delegate to multiple subagents in sequence.
-
-Be conversational, supportive, and actionable in your responses.
-Keep responses clean and professional - use markdown formatting.
-
-When discussing spending categories, these are the valid categories:
-- coffee, fast_food, delivery, dining, entertainment
-- groceries, transportation, shopping, subscription
-- utilities, healthcare, income, transfer, other""",
+        checkpointer=checkpointer,
     )
+
+    return agent
 
 
 async def run_query(query: str) -> None:

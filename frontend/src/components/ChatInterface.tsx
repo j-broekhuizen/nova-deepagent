@@ -7,6 +7,7 @@ import type { Message } from "@langchain/langgraph-sdk";
 import { MessageBubble } from "./MessageBubble";
 import { ToolCallCard } from "./ToolCallCard";
 import { SubAgentCard } from "./SubAgentCard";
+import { SkillsReadCard } from "./SkillsReadCard";
 import { MessageInput } from "./MessageInput";
 import { LoadingIndicator } from "./LoadingIndicator";
 import { EmptyState } from "./EmptyState";
@@ -26,6 +27,21 @@ function hasContent(message: Message): boolean {
     );
   }
   return false;
+}
+
+const SKILL_PATH_RE = /^\/skills\/([^/]+)\/SKILL\.md$/;
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function extractSkillReads(toolCalls: any[]): string[] {
+  const names: string[] = [];
+  for (const tc of toolCalls) {
+    if (tc?.call?.name !== "read_file") continue;
+    const path = tc.call?.args?.file_path;
+    if (typeof path !== "string") continue;
+    const m = path.match(SKILL_PATH_RE);
+    if (m) names.push(m[1]);
+  }
+  return names;
 }
 
 const SUGGESTIONS = [
@@ -64,8 +80,26 @@ export function ChatInterface({ stream }: ChatInterfaceProps) {
           ) : (
             <div className="flex flex-col gap-4">
               {stream.messages.map((message, idx) => {
+                if (message.type === "human") {
+                  return (
+                    <MessageBubble key={message.id ?? idx} message={message} />
+                  );
+                }
                 if (message.type === "ai") {
                   const toolCalls = stream.getToolCalls(message);
+
+                  // Pull out read_file calls on /skills/<name>/SKILL.md
+                  const skillReads = extractSkillReads(toolCalls);
+                  const skillReadIds = new Set(
+                    toolCalls
+                      .filter(
+                        (tc) =>
+                          tc.call.name === "read_file" &&
+                          typeof tc.call.args?.file_path === "string" &&
+                          SKILL_PATH_RE.test(tc.call.args.file_path)
+                      )
+                      .map((tc) => tc.id)
+                  );
 
                   // Separate subagent calls from regular tool calls
                   const subAgentCalls = toolCalls.filter(
@@ -76,6 +110,7 @@ export function ChatInterface({ stream }: ChatInterfaceProps) {
                   );
                   const regularToolCalls = toolCalls.filter(
                     (tc) =>
+                      !skillReadIds.has(tc.id) &&
                       !(
                         tc.call.name === "task" &&
                         tc.call.args &&
@@ -87,6 +122,9 @@ export function ChatInterface({ stream }: ChatInterfaceProps) {
                   if (toolCalls.length > 0) {
                     return (
                       <div key={message.id ?? idx} className="flex flex-col gap-2">
+                        {skillReads.length > 0 && (
+                          <SkillsReadCard skillNames={skillReads} />
+                        )}
                         {subAgentCalls.map((tc) => (
                           <SubAgentCard key={tc.id} toolCall={tc} />
                         ))}
