@@ -32,10 +32,21 @@ def get_spending_summary(
     now = datetime.now()
     if period == "week":
         start = now - timedelta(days=7)
+        period_days = 7
     elif period == "month":
         start = now - timedelta(days=30)
+        period_days = 30
     else:  # quarter
         start = now - timedelta(days=90)
+        period_days = 90
+
+    date_range_start = start.date().isoformat()
+    date_range_end = now.date().isoformat()
+    caveat = (
+        f"Totals cover a sliding {period_days}-day window "
+        f"({date_range_start} to {date_range_end}). Always restate this "
+        f"window when quoting dollar amounts back to the user."
+    )
 
     transactions = get_mock_transactions()
     expenses = [t for t in transactions if t.is_expense and t.date >= start]
@@ -47,6 +58,9 @@ def get_spending_summary(
             "total_spending": 0,
             "breakdown": [],
             "transaction_count": 0,
+            "date_range_start": date_range_start,
+            "date_range_end": date_range_end,
+            "_caveat": caveat,
         }
 
     # Group spending
@@ -81,6 +95,9 @@ def get_spending_summary(
         "total_spending": round(total_spending, 2),
         "breakdown": breakdown_list,
         "transaction_count": len(expenses),
+        "date_range_start": date_range_start,
+        "date_range_end": date_range_end,
+        "_caveat": caveat,
     }
 
     # Include chart visualization if requested
@@ -119,7 +136,10 @@ def get_category_spending(
     Returns:
         Dictionary with per-category breakdown including top merchants.
     """
-    cutoff = datetime.now() - timedelta(days=days)
+    now = datetime.now()
+    cutoff = now - timedelta(days=days)
+    date_range_start = cutoff.date().isoformat()
+    date_range_end = now.date().isoformat()
     transactions = get_mock_transactions()
 
     result = {}
@@ -163,6 +183,14 @@ def get_category_spending(
         "categories": result,
         "combined_total": round(combined_total, 2),
         "period_days": days,
+        "date_range_start": date_range_start,
+        "date_range_end": date_range_end,
+        "_caveat": (
+            f"Totals cover a sliding {days}-day window "
+            f"({date_range_start} to {date_range_end}). Always restate this "
+            f"window when quoting dollar amounts back to the user. If the user "
+            f"wants a different window, call again with `days=` set explicitly."
+        ),
     }
 
 
@@ -183,7 +211,10 @@ def get_merchant_spending_pattern(
     Returns:
         Spending pattern including frequency, average, weekday vs weekend analysis.
     """
-    cutoff = datetime.now() - timedelta(days=days)
+    now = datetime.now()
+    cutoff = now - timedelta(days=days)
+    date_range_start = cutoff.date().isoformat()
+    date_range_end = now.date().isoformat()
     transactions = get_mock_transactions()
 
     merchant_txns = [
@@ -196,7 +227,11 @@ def get_merchant_spending_pattern(
     ]
 
     if not merchant_txns:
-        return {"error": f"No transactions found for '{merchant_name}' in the last {days} days"}
+        return {
+            "error": f"No transactions found for '{merchant_name}' in the last {days} days",
+            "date_range_start": date_range_start,
+            "date_range_end": date_range_end,
+        }
 
     # Analyze patterns
     total = sum(abs(t.amount) for t in merchant_txns)
@@ -232,4 +267,11 @@ def get_merchant_spending_pattern(
         "weekend_visits": len(weekend_txns),
         "busiest_day": max(day_counts.items(), key=lambda x: x[1])[0] if day_counts else None,
         "by_day_of_week": {k: round(v, 2) for k, v in day_amounts.items()},
+        "date_range_start": date_range_start,
+        "date_range_end": date_range_end,
+        "_caveat": (
+            f"Pattern reflects a sliding {days}-day window "
+            f"({date_range_start} to {date_range_end}). Always restate this "
+            f"window when quoting dollar amounts back to the user."
+        ),
     }

@@ -157,6 +157,21 @@ WORKFLOW:
 2. Check if the request mentions "chart", "pie", "bar", "line", "graph", or "visualiz" - if so, you MUST call build_chart_spec
 3. Respond with your analysis
 
+CRITICAL - DATE WINDOWS (non-negotiable):
+Every spending tool (get_transactions, get_spending_summary, get_category_spending,
+get_merchant_spending_pattern) uses a sliding date window. The same natural-language
+question MUST always map to the same explicit window so totals are reproducible.
+
+- ALWAYS pass `days=` explicitly. Do not rely on defaults. Map user phrasing:
+  * "this month" / "last month" / "monthly" / unspecified → days=30
+  * "last quarter" / "past 3 months" → days=90
+  * "this year" / "year to date" / "past 12 months" → days=365
+  * "this week" / "last week" → days=7
+- Every tool result includes `date_range_start`, `date_range_end`, and `_caveat`.
+  In EVERY dollar-amount sentence you write back to the user, restate the window
+  in prose (e.g. "$179.94 over the last 30 days (2024-08-15 to 2024-09-14)").
+  Never quote a total without naming the window that produced it.
+
 CRITICAL - CHART RULES:
 - If the task mentions ANY chart/graph/visualization request, you MUST call build_chart_spec. This is mandatory.
 - NEVER create ASCII art, unicode blocks, or text-based visual representations. Only use build_chart_spec.
@@ -205,6 +220,22 @@ WORKFLOW:
 1. Use your tools to gather income, bills, and spending data as needed
 2. Check if the request mentions "chart", "pie", "bar", "line", "graph", or "visualiz" - if so, you MUST call build_chart_spec
 3. Respond with your recommendations
+
+CRITICAL - DATE WINDOWS (non-negotiable):
+Every spending/transaction tool uses a sliding date window. The same
+natural-language question MUST always map to the same explicit window so
+totals and savings projections are reproducible.
+
+- ALWAYS pass `days=` explicitly. Do not rely on defaults. Map user phrasing:
+  * "this month" / "last month" / "monthly" / unspecified → days=30
+  * "last quarter" / "past 3 months" → days=90
+  * "this year" / "year to date" / "past 12 months" → days=365
+  * "this week" / "last week" → days=7
+- Tool results include `date_range_start`, `date_range_end`, and `_caveat`.
+  In EVERY dollar-amount sentence (current spend, potential savings, monthly
+  or yearly projections), restate the window in prose (e.g. "$47.22 over the
+  last 30 days"). Never quote a total without naming the window that produced
+  it.
 
 CRITICAL - CHART RULES:
 - If the task mentions ANY chart/graph/visualization request, you MUST call build_chart_spec. This is mandatory.
