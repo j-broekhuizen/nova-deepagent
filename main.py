@@ -49,14 +49,14 @@ from deepagents import create_deep_agent, SubAgent
 from deepagents.backends import CompositeBackend, ContextHubBackend
 from deepagents.middleware.skills import SkillsMiddleware
 
-# Custom skills-middleware prompt template that turns "progressive disclosure"
-# into a mandatory consultation rule. The model sees this in the SAME content
-# block as the skills list, which has more local authority than putting the
-# directive in a separate top-level system_prompt block (Haiku-tier models
-# would otherwise probabilistically skip the read).
+# Skills-middleware prompt template. Nova's skill bodies are short, stable,
+# and apply to every response, so we inline them once at agent-construction
+# time (see `_render_skills_prompt_template`) rather than instructing the
+# model to re-read them via `read_file` on every turn — the latter bloats
+# multi-turn token counts 4-7x with no behavioral benefit.
 SKILLS_PROMPT_TEMPLATE = """## Skills System
 
-You have access to a versioned skills library that holds Nova's behavioral rules.
+Nova's behavioral rules are inlined below. Apply them to every response.
 
 {skills_locations}{skills_load_warnings}
 
@@ -64,24 +64,10 @@ You have access to a versioned skills library that holds Nova's behavioral rules
 
 {skills_list}
 
-**MANDATORY SKILL CONSULTATION (non-negotiable):**
+**Skill bodies (already in context — do NOT call `read_file` on these paths):**
 
-Before generating any other tool call, before delegating to any subagent, and
-before writing any response text, you MUST call `read_file` on the relevant
-SKILL.md files using `limit=1000`. Issue the read_file calls in PARALLEL.
-
-Heuristics for which skills to read on EVERY user request:
-
-1. **ALWAYS** read `/skills/currency-formatting/SKILL.md`. Every Nova response
-   involves a dollar amount or percentage, so this skill is always relevant.
-   Skipping it is a contract violation.
-2. Read `/skills/chart-data-emission/SKILL.md` IF the user requests a chart,
-   graph, pie, bar, line, area, or visualization.
-3. Read `/skills/category-vocabulary/SKILL.md` IF the user mentions a spending
-   category by name OR if the response will list spending categories.
-
-Do not say "I'll check..." or any preamble before the read_file calls. The
-read_file calls are your FIRST action."""
+{inlined_skill_bodies}
+"""
 
 # Import all tools
 from src.tools.transactions import get_transactions, get_recent_income
@@ -133,10 +119,37 @@ def _build_hub_backend() -> tuple[CompositeBackend, list[str]]:
     return _HUB_BACKEND_CACHE
 
 
+def _render_skills_prompt_template(backend) -> str:
+    """Inline SKILL.md bodies into the skills prompt template at build time."""
+    ls_result = backend.ls("/skills/")
+    entries = ls_result.entries if hasattr(ls_result, "entries") else ls_result
+    skill_md_paths = [
+        f"{entry['path'].rstrip('/')}/SKILL.md"
+        for entry in (entries or [])
+        if entry.get("is_dir")
+    ]
+    responses = backend.download_files(skill_md_paths) if skill_md_paths else []
+    sections: list[str] = []
+    for path, response in zip(skill_md_paths, responses):
+        if response.error or response.content is None:
+            continue
+        try:
+            body = response.content.decode("utf-8")
+        except UnicodeDecodeError:
+            continue
+        sections.append(f"<skill path=\"{path}\">\n{body}\n</skill>")
+    inlined = "\n\n".join(sections) if sections else "(no skill bodies available)"
+    # Escape braces so SkillsMiddleware's later .format() call doesn't treat
+    # brace-containing skill examples (e.g. JSON snippets) as format slots.
+    inlined = inlined.replace("{", "{{").replace("}", "}}")
+    return SKILLS_PROMPT_TEMPLATE.replace("{inlined_skill_bodies}", inlined)
+
+
 def create_nova(checkpointer=None):
     """Create Nova."""
 
     backend, _ = _build_hub_backend()
+    skills_system_prompt = _render_skills_prompt_template(backend)
 
     # Define subagents
     spending_analyst = SubAgent(
@@ -261,7 +274,7 @@ Confirm all actions clearly. No emojis.""",
             SkillsMiddleware(
                 backend=backend,
                 sources=["/skills/"],
-                system_prompt=SKILLS_PROMPT_TEMPLATE,
+                system_prompt=skills_system_prompt,
             ),
         ],
         subagents=[spending_analyst, savings_advisor, account_manager],
