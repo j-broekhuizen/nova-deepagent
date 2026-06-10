@@ -189,7 +189,7 @@ Keep responses concise and data-driven. Do not use emojis.""",
 
     savings_advisor = SubAgent(
         name="savings_advisor",
-        description="Calculate savings potential, run 'what if' scenarios, and recommend savings amounts. Use for questions about how much to save or what could be saved by changing habits.",
+        description="Income lookups, calculate savings potential, run 'what if' scenarios, and recommend savings amounts. Use for questions about how much to save or what could be saved by changing habits. This is the ONLY subagent with access to income data via get_recent_income — route any monthly-income, income-vs-expenses, or percentage-of-income question here.",
         model=MODEL,
         tools=[
             get_transactions,
@@ -236,7 +236,7 @@ Be encouraging but realistic. No emojis.""",
 
     account_manager = SubAgent(
         name="account_manager",
-        description="Handle account lookups, check balances, and execute transfers. Use for viewing accounts, checking balances, or moving money to savings.",
+        description="Handle account lookups, check balances, and execute transfers. Use for viewing accounts, checking balances, or moving money to savings. Does NOT have access to income or deposit data — route income questions to savings_advisor.",
         model=MODEL,
         tools=[
             get_accounts,
