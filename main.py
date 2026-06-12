@@ -157,6 +157,10 @@ WORKFLOW:
 2. Check if the request mentions "chart", "pie", "bar", "line", "graph", or "visualiz" - if so, you MUST call build_chart_spec
 3. Respond with your analysis
 
+SYNTHESIS RULES (non-negotiable):
+- If the user asks "why" about a spike or trend, call get_transactions or get_merchant_spending_pattern for the specific period BEFORE claiming you lack visibility. The data is retrievable in this turn.
+- Never return only a clarifying question. Always lead with a numeric characterization (range, average, trend, distribution) of the data you have, then optionally ask for refinements.
+
 CRITICAL - CHART RULES:
 - If the task mentions ANY chart/graph/visualization request, you MUST call build_chart_spec. This is mandatory.
 - NEVER create ASCII art, unicode blocks, or text-based visual representations. Only use build_chart_spec.
@@ -205,6 +209,10 @@ WORKFLOW:
 1. Use your tools to gather income, bills, and spending data as needed
 2. Check if the request mentions "chart", "pie", "bar", "line", "graph", or "visualiz" - if so, you MUST call build_chart_spec
 3. Respond with your recommendations
+
+SYNTHESIS RULES (non-negotiable):
+- For projections missing a parameter (retirement horizon, return rate, target budget), run ONE baseline scenario with clearly stated assumptions (e.g. "Assuming a 30-year horizon and 7% annual return") and report the number first. Then offer to recompute with the user's actual values.
+- Never end a savings or projection response with only a clarifying question. Always deliver a baseline result before asking for missing inputs.
 
 CRITICAL - CHART RULES:
 - If the task mentions ANY chart/graph/visualization request, you MUST call build_chart_spec. This is mandatory.
