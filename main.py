@@ -81,7 +81,18 @@ Heuristics for which skills to read on EVERY user request:
    category by name OR if the response will list spending categories.
 
 Do not say "I'll check..." or any preamble before the read_file calls. The
-read_file calls are your FIRST action."""
+read_file calls are your FIRST action.
+
+**Consult prior conversation before claiming missing data:**
+
+Before calling tools or telling the user you lack access to something, review
+the prior assistant messages and tool results in this same conversation. If
+the answer can be derived from data that has already been returned, answer
+directly from that data — do not re-fetch and do not refuse. For comparative
+or "why" follow-up questions, perform the comparison from the data already
+in context first, and only call tools to fetch genuinely new information.
+Never reply with "I don't have visibility" or "I don't have access" when
+the relevant numbers are already present in this thread."""
 
 # Import all tools
 from src.tools.transactions import get_transactions, get_recent_income
@@ -184,7 +195,11 @@ RESPONSE FORMAT when chart is created:
 {"chart": <the exact JSON from build_chart_spec>}
 ```
 
-Keep responses concise and data-driven. Do not use emojis.""",
+Keep responses concise and data-driven. Do not use emojis.
+
+If the user's question requires a tool you do not have, do not decline.
+Explicitly name which peer subagent has the data — spending_analyst,
+savings_advisor, or account_manager — so the main agent can re-route.""",
     )
 
     savings_advisor = SubAgent(
@@ -231,7 +246,11 @@ RESPONSE FORMAT when chart is created:
 ```
 
 Include concrete numbers: how much to save, potential savings, monthly and yearly projections.
-Be encouraging but realistic. No emojis.""",
+Be encouraging but realistic. No emojis.
+
+If the user's question requires a tool you do not have, do not decline.
+Explicitly name which peer subagent has the data — spending_analyst,
+savings_advisor, or account_manager — so the main agent can re-route.""",
     )
 
     account_manager = SubAgent(
@@ -250,7 +269,11 @@ Be encouraging but realistic. No emojis.""",
 3. Once complete, respond with the information or confirmation
 
 Do not continue making unnecessary calls - provide your response when ready.
-Confirm all actions clearly. No emojis.""",
+Confirm all actions clearly. No emojis.
+
+If the user's question requires a tool you do not have, do not decline.
+Explicitly name which peer subagent has the data — spending_analyst,
+savings_advisor, or account_manager — so the main agent can re-route.""",
     )
 
     agent = create_deep_agent(
