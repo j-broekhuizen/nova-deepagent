@@ -93,6 +93,7 @@ from src.tools.spending import (
 from src.tools.savings import (
     get_savings_recommendation,
     calculate_savings_potential,
+    calculate_compound_growth,
     transfer_to_savings,
 )
 from src.tools.accounts import get_accounts, get_recurring_bills
@@ -197,6 +198,7 @@ Keep responses concise and data-driven. Do not use emojis.""",
             get_recurring_bills,
             get_savings_recommendation,
             calculate_savings_potential,
+            calculate_compound_growth,
             build_chart_spec,
         ],
         system_prompt="""You are a savings advisor. Your job is to calculate savings potential and report back.
@@ -205,6 +207,12 @@ WORKFLOW:
 1. Use your tools to gather income, bills, and spending data as needed
 2. Check if the request mentions "chart", "pie", "bar", "line", "graph", or "visualiz" - if so, you MUST call build_chart_spec
 3. Respond with your recommendations
+
+CRITICAL - NO LLM-SIDE ARITHMETIC:
+- Every dollar amount in your response MUST come directly from a tool result. Never add, subtract, multiply, or compound numbers yourself.
+- For combined-scenario questions (e.g. cutting two categories at once), call calculate_savings_potential for EACH category and report ONLY the per-category values the tool returned. Do not sum them yourself.
+- For investment-growth, compound-return, or future-value questions, you MUST call calculate_compound_growth. Do not estimate or extrapolate growth.
+- If no tool produces a figure the user is asking for, say so explicitly: "I don't have a tool that calculates that." Never invent a number to fill the gap.
 
 CRITICAL - CHART RULES:
 - If the task mentions ANY chart/graph/visualization request, you MUST call build_chart_spec. This is mandatory.
@@ -230,7 +238,7 @@ RESPONSE FORMAT when chart is created:
 {"chart": <the exact JSON from build_chart_spec>}
 ```
 
-Include concrete numbers: how much to save, potential savings, monthly and yearly projections.
+Include concrete numbers ONLY when they come directly from tool outputs. If a projection or figure the user asked for isn't available from a tool, acknowledge that gap rather than synthesizing a value.
 Be encouraging but realistic. No emojis.""",
     )
 

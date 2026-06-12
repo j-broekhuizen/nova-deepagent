@@ -145,6 +145,46 @@ def calculate_savings_potential(
 
 
 @tool
+def calculate_compound_growth(
+    principal: float,
+    annual_rate_percent: float,
+    years: int,
+    monthly_contribution: float = 0.0,
+) -> dict:
+    """Project the future value of a principal under compound growth.
+
+    Use this whenever the user asks about investment growth, returns over time,
+    or "what would $X grow to at Y% over Z years". The agent MUST ALWAYS call
+    this tool for any compound-growth / investment-return / future-value
+    question and NEVER compute compound growth itself.
+
+    Args:
+        principal: Starting balance.
+        annual_rate_percent: Annual return rate as a percent (e.g., 7 for 7%).
+        years: Number of years to project.
+        monthly_contribution: Optional recurring monthly contribution.
+
+    Returns:
+        Final balance, total contributions, and total interest earned.
+    """
+    monthly_rate = (annual_rate_percent / 100.0) / 12.0
+    months = years * 12
+    balance = principal
+    for _ in range(months):
+        balance = balance * (1 + monthly_rate) + monthly_contribution
+    total_contributions = principal + monthly_contribution * months
+    return {
+        "principal": round(principal, 2),
+        "annual_rate_percent": annual_rate_percent,
+        "years": years,
+        "monthly_contribution": round(monthly_contribution, 2),
+        "final_balance": round(balance, 2),
+        "total_contributions": round(total_contributions, 2),
+        "total_interest_earned": round(balance - total_contributions, 2),
+    }
+
+
+@tool
 def transfer_to_savings(
     amount: float,
     from_account_id: Optional[str] = None,
