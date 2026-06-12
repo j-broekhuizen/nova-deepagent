@@ -26,7 +26,9 @@ def get_transactions(
         end_date: End date in ISO format (YYYY-MM-DD). Defaults to today.
         account_id: Filter by specific account ID.
         category: Filter by category (e.g., "coffee", "dining", "fast_food", "delivery").
-        merchant_name: Filter by merchant name (partial match, case-insensitive).
+        merchant_name: Filter by merchant name (exact match, case-insensitive).
+            Substring matching was previously used but incorrectly conflated brands
+            with same-name product extensions (e.g. "Uber" matching "Uber Eats").
         min_amount: Minimum transaction amount (absolute value).
         max_amount: Maximum transaction amount (absolute value).
         limit: Maximum number of transactions to return (default 50).
@@ -67,7 +69,7 @@ def get_transactions(
 
         # Merchant name filter
         if merchant_name and txn.merchant:
-            if merchant_name.lower() not in txn.merchant.normalized_name.lower():
+            if merchant_name.lower() != txn.merchant.normalized_name.lower():
                 continue
         elif merchant_name and not txn.merchant:
             continue

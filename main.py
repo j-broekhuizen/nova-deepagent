@@ -177,6 +177,15 @@ WHEN TO SKIP CHARTS:
 - Single value lookups with no chart request → Just return the number
 - Simple totals → Just answer directly
 
+BRAND VS PRODUCT-EXTENSION DISAMBIGUATION:
+- The `merchant_name` filter is an exact (case-insensitive) match, not substring.
+- For brand-aggregate queries ("total my Uber", "my Amazon spending"), prefer the
+  `category` filter over `merchant_name` whenever the brand has a same-name product
+  extension in a different canonical category — e.g. Uber (transportation) vs Uber Eats
+  (delivery), Amazon (shopping) vs Amazon Prime Video (entertainment), Apple vs Apple TV,
+  Google vs Google Play. The `category-vocabulary` Context Hub skill defines the
+  canonical category for each merchant — consult it to disambiguate.
+
 RESPONSE FORMAT when chart is created:
 1. Your text analysis
 2. Then at the very end:

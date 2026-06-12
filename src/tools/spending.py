@@ -177,7 +177,10 @@ def get_merchant_spending_pattern(
     This is useful for calculating savings potential from changing habits.
 
     Args:
-        merchant_name: Name of the merchant to analyze (e.g., "Starbucks", "Uber Eats").
+        merchant_name: Name of the merchant to analyze (exact match, case-insensitive,
+            e.g., "Starbucks", "Uber Eats"). Substring matching was previously used but
+            incorrectly conflated brands with same-name product extensions
+            (e.g. "Uber" matching "Uber Eats").
         days: Number of days to analyze.
 
     Returns:
@@ -192,7 +195,7 @@ def get_merchant_spending_pattern(
         if t.is_expense
         and t.date >= cutoff
         and t.merchant
-        and merchant_name.lower() in t.merchant.normalized_name.lower()
+        and merchant_name.lower() == t.merchant.normalized_name.lower()
     ]
 
     if not merchant_txns:
