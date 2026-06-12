@@ -160,7 +160,8 @@ WORKFLOW:
 CRITICAL - CHART RULES:
 - If the task mentions ANY chart/graph/visualization request, you MUST call build_chart_spec. This is mandatory.
 - NEVER create ASCII art, unicode blocks, or text-based visual representations. Only use build_chart_spec.
-- After calling build_chart_spec, include the returned JSON in a ```chartdata block at the END of your response.
+- build_chart_spec already returns a dict shaped {"chart": {...}}. Emit that dict EXACTLY and unchanged inside a ```chartdata block at the END of your response. Do not re-wrap it. Do not unwrap it. Do not put it in an array. Do not merge multiple charts — emit one ```chartdata block per chart if you have more than one.
+- When the response narrates a chart (e.g. "the chart above shows..."), the message MUST end with a ```chartdata block. Never reference a chart without emitting the block.
 
 CHART TYPE SELECTION:
 - "pie": Breakdowns showing proportions (spending by category, by merchant)
@@ -179,10 +180,17 @@ WHEN TO SKIP CHARTS:
 
 RESPONSE FORMAT when chart is created:
 1. Your text analysis
-2. Then at the very end:
+2. Then at the very end, paste the dict returned by build_chart_spec verbatim:
 ```chartdata
-{"chart": <the exact JSON from build_chart_spec>}
+<the exact dict returned by build_chart_spec, already shaped {"chart": {...}}>
 ```
+
+EXAMPLE:
+  build_chart_spec returns: {"chart": {"type": "bar", "data": [...], "series": [...]}}
+  Your response ends with:
+  ```chartdata
+  {"chart": {"type": "bar", "data": [...], "series": [...]}}
+  ```
 
 Keep responses concise and data-driven. Do not use emojis.""",
     )
@@ -209,7 +217,8 @@ WORKFLOW:
 CRITICAL - CHART RULES:
 - If the task mentions ANY chart/graph/visualization request, you MUST call build_chart_spec. This is mandatory.
 - NEVER create ASCII art, unicode blocks, or text-based visual representations. Only use build_chart_spec.
-- After calling build_chart_spec, include the returned JSON in a ```chartdata block at the END of your response.
+- build_chart_spec already returns a dict shaped {"chart": {...}}. Emit that dict EXACTLY and unchanged inside a ```chartdata block at the END of your response. Do not re-wrap it. Do not unwrap it. Do not put it in an array. Do not merge multiple charts — emit one ```chartdata block per chart if you have more than one.
+- When the response narrates a chart (e.g. "the chart above shows..."), the message MUST end with a ```chartdata block. Never reference a chart without emitting the block.
 
 CHART TYPE SELECTION:
 - "bar": Comparing savings scenarios or categories
@@ -225,10 +234,17 @@ WHEN TO SKIP CHARTS:
 
 RESPONSE FORMAT when chart is created:
 1. Your text analysis with concrete numbers
-2. Then at the very end:
+2. Then at the very end, paste the dict returned by build_chart_spec verbatim:
 ```chartdata
-{"chart": <the exact JSON from build_chart_spec>}
+<the exact dict returned by build_chart_spec, already shaped {"chart": {...}}>
 ```
+
+EXAMPLE:
+  build_chart_spec returns: {"chart": {"type": "bar", "data": [...], "series": [...]}}
+  Your response ends with:
+  ```chartdata
+  {"chart": {"type": "bar", "data": [...], "series": [...]}}
+  ```
 
 Include concrete numbers: how much to save, potential savings, monthly and yearly projections.
 Be encouraging but realistic. No emojis.""",
