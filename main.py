@@ -266,7 +266,7 @@ Confirm all actions clearly. No emojis.""",
         ],
         subagents=[spending_analyst, savings_advisor, account_manager],
         checkpointer=checkpointer,
-    )
+    ).with_config(run_name="nova", tags=["nova"])
 
     return agent
 
@@ -280,7 +280,10 @@ async def run_query(query: str) -> None:
     with console.status("[bold green]Thinking...", spinner="dots"):
         result = await agent.ainvoke(
             {"messages": [HumanMessage(content=query)]},
-            config={"configurable": {"thread_id": "nova-demo"}},
+            config={
+                "configurable": {"thread_id": "nova-demo"},
+                "metadata": {"environment": os.getenv("ENV", "development")},
+            },
         )
 
     # Display response
@@ -325,7 +328,10 @@ async def interactive_mode() -> None:
 
             async for event in agent.astream_events(
                 {"messages": messages},
-                config={"configurable": {"thread_id": thread_id}},
+                config={
+                    "configurable": {"thread_id": thread_id},
+                    "metadata": {"environment": os.getenv("ENV", "development")},
+                },
                 version="v2",
             ):
                 event_type = event.get("event")
