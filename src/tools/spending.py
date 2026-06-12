@@ -171,13 +171,17 @@ def get_merchant_spending_pattern(
     merchant_name: str,
     days: int = 30,
 ) -> dict:
-    """Analyze spending pattern for a specific merchant.
+    """Analyze spending pattern for a single exact canonical merchant.
 
-    Use this to understand habits like coffee shop visits, food delivery frequency, etc.
-    This is useful for calculating savings potential from changing habits.
+    Matching is case-insensitive but requires an exact match on the canonical
+    merchant name (e.g. "Uber" or "Uber Eats", not "uber" or "Uber E"). Distinct
+    merchants that share a name prefix (e.g. "Uber" vs. "Uber Eats") resolve to
+    different categories and are never combined. Known canonical merchants
+    include: Starbucks, Uber Eats, McDonald's, Chick-fil-A, DoorDash,
+    Whole Foods, Trader Joe's, Uber, Shell, AMC Theatres.
 
     Args:
-        merchant_name: Name of the merchant to analyze (e.g., "Starbucks", "Uber Eats").
+        merchant_name: Exact canonical name of the merchant to analyze.
         days: Number of days to analyze.
 
     Returns:
@@ -192,7 +196,7 @@ def get_merchant_spending_pattern(
         if t.is_expense
         and t.date >= cutoff
         and t.merchant
-        and merchant_name.lower() in t.merchant.normalized_name.lower()
+        and merchant_name.lower() == t.merchant.normalized_name.lower()
     ]
 
     if not merchant_txns:
