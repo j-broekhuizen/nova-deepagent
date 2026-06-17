@@ -22,10 +22,12 @@ cp .env.example .env
 
 Edit `.env` with your API keys:
 ```
-ANTHROPIC_API_KEY=sk-ant-...
-LANGSMITH_API_KEY=lsv2_pt_...
+ANTHROPIC_API_KEY=your-anthropic-api-key
+LANGSMITH_API_KEY=your-langsmith-api-key
 LANGSMITH_PROJECT=nova
 LANGSMITH_TRACING=true
+NOVA_CONTEXT_HUB_AGENT=nova
+NOVA_CONTEXT_HUB_WORKSPACE=your-workspace-id
 ```
 
 ## Usage
@@ -54,12 +56,11 @@ nova/
 ├── graph.py                # LangGraph export for `langgraph dev`
 ├── pyproject.toml          # Python dependencies
 ├── frontend/               # React UI for `langgraph dev`
-├── scripts/                # Eval helpers (test question runners)
 ├── src/                    # Tools and mock data
 │   ├── models/
 │   ├── tools/
 │   └── data/
-└── tests/
+└── context_hub_demo/       # Notebook walkthrough for Context Hub setup
 ```
 
 ## Memory and skills (Context Hub)
@@ -71,11 +72,10 @@ nova/
 | `skills/chart-data-emission/SKILL.md` | When and how to emit `chartdata` blocks. |
 | `skills/category-vocabulary/SKILL.md` | Canonical spending-category names and aliases. |
 
-All skills are embedded in the single `nova` agent repo, rather than linked
-from standalone skill repos. To edit these files, open them in the LangSmith
-Context Hub UI under Context → nova. Engine-proposed fixes commit directly to
-the `nova` agent repo once accepted and are picked up on the next agent
-invocation, no restart required.
+All skills are embedded in the single `nova` agent repo. To edit these files,
+open them in the LangSmith Context Hub UI under Context → nova. Engine-proposed
+fixes commit directly to the `nova` agent repo once accepted and are picked up
+on the next agent invocation, no restart required.
 
 At runtime, Nova mounts this Context Hub repo under `/memories/` with a
 `CompositeBackend`. The default backend remains a `StateBackend`, so file paths
