@@ -1,0 +1,21 @@
+README.md
+  s_ce2435c230c6ee::t_b12de008c95fe4 25-26,29-30,63,75-78
+context_hub_demo/README.md
+  s_ce2435c230c6ee::t_b12de008c95fe4 1,3-4,6,8,10-16,19-20,22,24-27
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.8",
+  "base_commit_sha": "37ce9a4b1537e7258b25143464b9daa2610f8d0c",
+  "prompts": {},
+  "sessions": {
+    "s_ce2435c230c6ee": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019ecd6c-3a2a-7cd3-b2fb-163cf511e1e5",
+        "model": "gpt-5.5"
+      },
+      "human_author": "j-broekhuizen <jb@langchain.dev>"
+    }
+  }
+}
