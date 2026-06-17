@@ -1,0 +1,55 @@
+.env.example
+  s_daa67c1264850f::t_9e1bd02c0ff9bf 15-17
+  h_e6936ebba927be 14,18-19
+  s_ce2435c230c6ee::t_efce703ca79bfd 5,11,20
+context_hub_demo/demo.ipynb
+  s_ce2435c230c6ee::t_d291df67eb2b6a 2-434,436-437
+  s_ce2435c230c6ee::t_4bd2e67deba0e6 435
+  s_daa67c1264850f::t_9d7af55e028a3d 438
+README.md
+  s_ce2435c230c6ee::t_6137d75147901c 67-78
+  s_ce2435c230c6ee::t_0f64e54070c0e6 80-83
+main.py
+  s_daa67c1264850f::t_d4fe046441f261 86
+  s_daa67c1264850f::t_82f6b135cc3199 34-39
+  s_daa67c1264850f::t_8f9a70471159fa 101
+  s_ce2435c230c6ee::t_5c486adc18b1ae 31,64-66,69-72,120,124
+  h_e6936ebba927be 67-68,116
+  s_daa67c1264850f::t_5ed9222fc58e39 17-18
+  s_daa67c1264850f::t_6e033972ae866e 113
+src/prompts.py
+  s_daa67c1264850f::t_26de78c190154b 1-25,28-29,35-116
+  s_ce2435c230c6ee::t_d6e7195aee68fd 30-34
+  s_ce2435c230c6ee::t_5c486adc18b1ae 26-27
+.gitignore
+  s_ce2435c230c6ee::t_7ff2f4f6196f10 8-9,47
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.8",
+  "base_commit_sha": "98a5472afecc8eb1cff60d8bd932f3e9b9c4b61a",
+  "prompts": {},
+  "humans": {
+    "h_e6936ebba927be": {
+      "author": "j-broekhuizen <jb@langchain.dev>"
+    }
+  },
+  "sessions": {
+    "s_ce2435c230c6ee": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019ecd6c-3a2a-7cd3-b2fb-163cf511e1e5",
+        "model": "gpt-5.5"
+      },
+      "human_author": "j-broekhuizen <jb@langchain.dev>"
+    },
+    "s_daa67c1264850f": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "309c1077-b542-4f09-b8ea-39705bb60015",
+        "model": "composer-2.5"
+      },
+      "human_author": "j-broekhuizen <jb@langchain.dev>"
+    }
+  }
+}
