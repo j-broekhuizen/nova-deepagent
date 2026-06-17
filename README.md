@@ -64,20 +64,23 @@ nova/
 
 ## Memory and skills (Context Hub)
 
-| Repo | Type | Purpose |
-|---|---|---|
-| `nova` | agent | Top-level manifest. Contains `AGENTS.md` (hard rules + delegation policy) and three `SkillEntry` links to the skills below. |
-| `currency-formatting` | skill | How to render dollar amounts and percentages. |
-| `chart-data-emission` | skill | When and how to emit `chartdata` blocks. |
-| `category-vocabulary` | skill | Canonical spending-category names and aliases. |
+| Path in `nova` | Purpose |
+|---|---|
+| `AGENTS.md` | Hard rules, delegation policy, tone, and applied skill list. |
+| `skills/currency-formatting/SKILL.md` | How to render dollar amounts and percentages. |
+| `skills/chart-data-emission/SKILL.md` | When and how to emit `chartdata` blocks. |
+| `skills/category-vocabulary/SKILL.md` | Canonical spending-category names and aliases. |
 
-The skill links are **unpinned** — they auto-resolve to the latest skill commit.
-This means a fix proposed by LangSmith Engine to a skill is picked up on the
-next agent invocation, no restart required.
+All skills are embedded in the single `nova` agent repo, rather than linked
+from standalone skill repos. To edit these files, open them in the LangSmith
+Context Hub UI under Context → nova. Engine-proposed fixes commit directly to
+the `nova` agent repo once accepted and are picked up on the next agent
+invocation, no restart required.
 
-To edit these files, open them in the LangSmith Context Hub UI (Context →
-nova, or any of the skill repos). Engine-proposed fixes commit directly to
-Context Hub once accepted.
+At runtime, Nova mounts this Context Hub repo under `/memories/` with a
+`CompositeBackend`. The default backend remains a `StateBackend`, so file paths
+outside `/memories/` can still be used as scratchpad state without writing back
+to Context Hub.
 
 ## Tools
 
