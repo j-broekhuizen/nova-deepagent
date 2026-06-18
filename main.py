@@ -33,6 +33,7 @@ from deepagents.middleware.skills import SkillsMiddleware
 
 from src.prompts import (
     ACCOUNT_MANAGER_SYSTEM_PROMPT,
+    NOVA_SYSTEM_PROMPT,
     SAVINGS_ADVISOR_SYSTEM_PROMPT,
     SKILLS_PROMPT_TEMPLATE,
     SPENDING_ANALYST_SYSTEM_PROMPT,
@@ -116,6 +117,7 @@ def create_nova(checkpointer=None):
     # Create the agent
     agent = create_deep_agent(
         model=MODEL,
+        system_prompt=NOVA_SYSTEM_PROMPT,
         backend=backend,
         memory=["/memories/AGENTS.md"],
         middleware=[
