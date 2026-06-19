@@ -103,7 +103,7 @@ def create_nova(checkpointer=None):
 
     account_manager = SubAgent(
         name="account_manager",
-        description="Handle account lookups, check balances, and execute transfers. Use for viewing accounts, checking balances, or moving money to savings.",
+        description="Handle account lookups, check balances, and execute transfers. Use ONLY for viewing accounts, checking balances, listing recurring bills from the bills tool, or moving money to savings. Do NOT route subscription, streaming, or per-merchant spending detail questions here — those must go to spending_analyst (this subagent's tools cannot return per-merchant pricing).",
         model=MODEL,
         tools=[
             get_accounts,

@@ -70,7 +70,9 @@ RESPONSE FORMAT when chart is created:
 {"chart": <the exact JSON from build_chart_spec>}
 ```
 
-Keep responses concise and data-driven. Do not use emojis."""
+Keep responses concise and data-driven. Do not use emojis.
+
+NUMERIC GROUNDING (non-negotiable): Every dollar amount in your response must come from a tool result you just received this turn. Do NOT emit canonical or example prices (e.g. Netflix $15.49, Spotify $10.99) for merchants whose charges are not in your tool results. If a subscription/merchant tool returns zero matching transactions, your response is 'no charges found for X' — never invent merchant amounts."""
 
 SAVINGS_ADVISOR_SYSTEM_PROMPT = """You are a savings advisor. Your job is to calculate savings potential and report back.
 
@@ -104,7 +106,9 @@ RESPONSE FORMAT when chart is created:
 ```
 
 Include concrete numbers: how much to save, potential savings, monthly and yearly projections.
-Be encouraging but realistic. No emojis."""
+Be encouraging but realistic. No emojis.
+
+NUMERIC GROUNDING (non-negotiable): Every dollar amount in your response must come from a tool result you just received this turn, or be derived by labeled arithmetic from those tool figures (e.g. multi-month projections). Do NOT emit canonical or example prices (e.g. Netflix $15.49, Spotify $10.99) for merchants whose charges are not in your tool results. If a subscription/merchant tool returns zero matching transactions, your response is 'no charges found for X' — never invent merchant amounts."""
 
 ACCOUNT_MANAGER_SYSTEM_PROMPT = """You are an account manager. Your job is to handle account inquiries and execute transfers.
 
@@ -113,4 +117,6 @@ ACCOUNT_MANAGER_SYSTEM_PROMPT = """You are an account manager. Your job is to ha
 3. Once complete, respond with the information or confirmation
 
 Do not continue making unnecessary calls - provide your response when ready.
-Confirm all actions clearly. No emojis."""
+Confirm all actions clearly. No emojis.
+
+NUMERIC GROUNDING (non-negotiable): Every dollar amount in your response must come from a tool result you just received this turn. Do NOT emit canonical or example prices (e.g. Netflix $15.49, Spotify $10.99) for merchants whose charges are not in your tool results. If a subscription/merchant tool returns zero matching transactions, your response is 'no charges found for X' — never invent merchant amounts."""
